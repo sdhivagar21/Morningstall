@@ -72,6 +72,8 @@ const OPS = {
   setProfit(db, d, v) { const x = db.days[d] || (db.days[d] = newDay(db.prices)); if (v == null) delete x.profit; else x.profit = v; },
   setCost(db, d, v) { const x = db.days[d] || (db.days[d] = newDay(db.prices)); if (v == null) delete x.cost; else x.cost = v; },
   delDay(db, d) { delete db.days[d]; },
+  /* stall closed that day — nobody available to run it */
+  setLeave(db, d, on) { if (on) (db.days[d] || (db.days[d] = newDay(db.prices))).leave = true; else if (db.days[d]) delete db.days[d].leave; },
   putDay(db, d, day) { db.days[d] = day; },
   setPrice(db, k, f, v, today) { db.prices[k][f] = v; const t = db.days[today]; if (t) (t.prices ||= clone(db.prices))[k][f] = v; },
   addCost(db, e) { if (!db.expenses.some((x) => x.id === e.id)) db.expenses.push(e); },
@@ -95,6 +97,7 @@ function cleanDay(day) {
   }
   if (isInt(day.profit, -MAXRS, MAXRS)) out.profit = day.profit;
   if (isInt(day.cost, 0, MAXRS)) out.cost = day.cost;
+  if (day.leave === true) out.leave = true;
   return out;
 }
 
@@ -106,6 +109,7 @@ function check(name, a) {
     case "setProfit": return isDate(a[0]) && (a[1] === null || isInt(a[1], -MAXRS, MAXRS)) ? a.slice(0, 2) : null;
     case "setCost": return isDate(a[0]) && (a[1] === null || isInt(a[1], 0, MAXRS)) ? a.slice(0, 2) : null;
     case "delDay": return isDate(a[0]) ? [a[0]] : null;
+    case "setLeave": return isDate(a[0]) && typeof a[1] === "boolean" ? a.slice(0, 2) : null;
     case "putDay": { const d = cleanDay(a[1]); return isDate(a[0]) && d ? [a[0], d] : null; }
     case "setPrice": return isItem(a[0]) && a[1] === "price" && isInt(a[2], 0, MAXQ) && isDate(a[3]) ? a.slice(0, 4) : null;
     case "addCost": {

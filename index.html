@@ -89,7 +89,11 @@ h3{font-size:18px;margin:22px 0 10px}h3 span{font:500 14px var(--bf);color:var(-
 .m{padding:0 12px!important;min-width:86px;font-weight:500;color:var(--muted)}.m.pf{font-weight:700}
 .is-today td,.is-today .sc{background:#FFF5D6}.grid .is-today td.calc{background:#F6E8BF}
 .grid tfoot th,.grid tfoot td{background:var(--head);font-weight:800;padding:12px 10px;border-bottom:0;color:var(--green)}.grid tfoot .m{color:var(--green)}
-.x{width:46px;text-align:center!important}.del{width:44px;height:44px;border-radius:10px;color:var(--muted);display:inline-grid;place-items:center}
+.x{width:46px;text-align:center!important}
+.lv-btn{display:block;margin:4px 0 2px;min-height:34px;padding:0 10px;border-radius:99px;font-size:12px;font-weight:700;color:var(--green);background:#fff;box-shadow:inset 0 0 0 1.5px #D9CCB1}.lv-btn:hover{box-shadow:inset 0 0 0 1.5px var(--green)}
+.sc em.lv{color:var(--muted)}
+.grid td.lvcell{text-align:left;padding:0 6px 0 14px;color:var(--muted);font-weight:700;background:repeating-linear-gradient(-45deg,#F7F0E1 0 10px,#FBF6EA 10px 20px)}
+.lvcell span{margin-right:10px}.lvcell .quiet{font-size:14px}.is-today td.lvcell{background:repeating-linear-gradient(-45deg,#F6E8BF 0 10px,#FFF5D6 10px 20px)}.del{width:44px;height:44px;border-radius:10px;color:var(--muted);display:inline-grid;place-items:center}
 .empty-row{text-align:center!important;padding:28px 16px!important;color:var(--muted);white-space:normal!important}
 .hint{font-size:14px;color:var(--muted)}
 @media(min-width:760px){.sheet{margin:0;border-radius:18px}}
@@ -190,6 +194,7 @@ const OPS={
   setProfit(db,d,v){const x=db.days[d]||(db.days[d]=newDay(db.prices));if(v==null)delete x.profit;else x.profit=v},
   setCost(db,d,v){const x=db.days[d]||(db.days[d]=newDay(db.prices));if(v==null)delete x.cost;else x.cost=v},
   delDay(db,d){delete db.days[d]},putDay(db,d,day){db.days[d]=day},
+  setLeave(db,d,on){if(on)(db.days[d]||(db.days[d]=newDay(db.prices))).leave=true;else if(db.days[d])delete db.days[d].leave},
   setPrice(db,k,f,v,today){db.prices[k][f]=v;const t=db.days[today];if(t)(t.prices||(t.prices=clone(db.prices)))[k][f]=v},
   addCost(db,e){if(!db.expenses.some(x=>x.id===e.id))db.expenses.push(e)},delCost(db,id){db.expenses=db.expenses.filter(e=>e.id!==id)}};
 /* older saves priced each item's cost; turn that into the day's cost once so totals don't jump */
@@ -259,14 +264,16 @@ function sync(s){const el=$("#sync");if(!el)return;el.className="sync "+s;
 function calcDay(day){const pr=day.prices||D.prices,by={};let rev=0,made=0,sold=0;
   for(const p of P){const x=day[p.id]||{made:0,sold:0},r=x.sold*(pr[p.id]?.price??D.prices[p.id].price);by[p.id]={made:x.made,sold:x.sold,rev:r};rev+=r;made+=x.made;sold+=x.sold}
   const hasCost=typeof day.cost==="number",cost=hasCost?day.cost:0,counted=made>0||sold>0,data=counted||hasCost,manual=!data&&typeof day.profit==="number";
-  return{rev,cost,hasCost,profit:data?rev-cost:manual?day.profit:0,made,sold,by,counted,data,manual,empty:!data&&!manual}}
+  /* leave = stall closed, nobody available; numbers typed for the day win over the leave mark */
+  const leave=!data&&!manual&&day.leave===true;
+  return{rev,cost,hasCost,profit:data?rev-cost:manual?day.profit:0,made,sold,by,counted,data,manual,leave,empty:!data&&!manual&&!leave}}
 function periodRange(per){const t=TODAY(),cap=d=>d<START?START:d;if(per==="month")return[cap(t.slice(0,8)+"01"),t];if(per==="d30")return[cap(addDays(t,-29)),t];return[START,t]}
-function analyse(r){const items=Object.fromEntries(P.map(p=>[p.id,{made:0,sold:0,rev:0}]));let rev=0,dcost=0,made=0,sold=0,manual=0,cdays=0;const daily=[],mdays=[],missing=[],nocost=[];
-  for(let d=r[0];d<=r[1];d=addDays(d,1)){const day=D.days[d],c=day&&calcDay(day);if(!c||c.empty){missing.push(d);continue}
+function analyse(r){const items=Object.fromEntries(P.map(p=>[p.id,{made:0,sold:0,rev:0}]));let rev=0,dcost=0,made=0,sold=0,manual=0,cdays=0;const daily=[],mdays=[],missing=[],nocost=[],leaves=[];
+  for(let d=r[0];d<=r[1];d=addDays(d,1)){const day=D.days[d],c=day&&calcDay(day);if(c&&c.leave){leaves.push(d);continue}if(!c||c.empty){missing.push(d);continue}
     if(c.manual){manual+=c.profit;mdays.push(d)}else{cdays++;P.forEach(p=>{const a=items[p.id],b=c.by[p.id];a.made+=b.made;a.sold+=b.sold;a.rev+=b.rev});rev+=c.rev;dcost+=c.cost;made+=c.made;sold+=c.sold;if(c.rev>0&&!c.hasCost)nocost.push(d)}
     daily.push({d,v:c.profit})}
   const ex=D.expenses.filter(e=>e.date>=r[0]&&e.date<=r[1]).sort((a,b)=>a.date<b.date?1:-1),other=ex.reduce((a,e)=>a+e.amount,0);
-  return{daily,items,rev,dcost,other,ex,invested:dcost+other,net:rev-dcost+manual-other,made,sold,manual,mdays,missing,nocost,cdays}}
+  return{daily,items,rev,dcost,other,ex,invested:dcost+other,net:rev-dcost+manual-other,made,sold,manual,mdays,missing,nocost,cdays,leaves}}
 
 /* ---------- app shell ---------- */
 const app=$("#app");const S={session:store.get(K.session,null),page:"home",month:null,per:"month",extra:new Set()};
@@ -311,14 +318,21 @@ function renderHome(){const ds=allDates(),multi=ds[0].slice(0,7)!==ds[ds.length-
   <tr class="prow2"><th class="sc" scope="row">Price each</th>${P.map(p=>`<td colspan="2"><span class="pin">₹<input data-price data-k="${p.id}" data-f="price" inputmode="numeric" maxlength="4" autocomplete="off" value="${D.prices[p.id].price}" aria-label="${p.short} price each"></span></td>`).join("")}<td colspan="3" class="pnote">Sales = sold × price · Profit = sales − cost</td></tr></thead>
   <tbody>${ds.map(d=>{const m=d.slice(0,7),sep=multi&&m!==lastM?`<tr class="mrow"><th colspan="${P.length*2+5}" scope="rowgroup">${monthName(m)}</th></tr>`:"";lastM=m;return sep+row(d)}).join("")}</tbody>
   <tfoot><tr id="foot"></tr></tfoot></table></div><div id="issues" aria-live="polite"></div>
-  <p class="hint">White boxes are for typing; shaded ones fill in by themselves. Cost = what you spent that day. No counts for a day? Type its profit straight in (− for a loss). A new price counts from today.</p>`;
+  <p class="hint">White boxes are for typing; shaded ones fill in by themselves. Cost = what you spent that day. No counts for a day? Type its profit straight in (− for a loss). Stall closed because nobody was available? Tap <b>Leave</b> under the date. A new price counts from today.</p>`;
   derive()}
 function row(d){const day=D.days[d],c=day&&calcDay(day),lab=fmtDate(d,{day:"numeric",month:"short"});
   const cell=(p,f)=>`<td><input class="cell" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="off" enterkeyhint="next" data-d="${d}" data-k="${p.id}" data-f="${f}" value="${c&&c.counted?day[p.id][f]:""}" placeholder="0" aria-label="${lab}, ${p.short} ${f}"></td>`;
-  return`<tr data-d="${d}"${d===TODAY()?' class="is-today"':""}><th scope="row" class="sc"><small>Day ${dayNo(d)}</small>${fmtDate(d,{weekday:"short"})} <b>${+d.slice(8)}</b> ${fmtDate(d,{month:"short"})}<em data-c="tag"></em></th>${P.map(p=>cell(p,"made")+cell(p,"sold")).join("")}
+  const lv=c&&c.leave,tr=`<tr data-d="${d}"${lv?" data-leave":""}${d===TODAY()?' class="is-today"':""}>`,
+    sc=`<th scope="row" class="sc"><small>Day ${dayNo(d)}</small>${fmtDate(d,{weekday:"short"})} <b>${+d.slice(8)}</b> ${fmtDate(d,{month:"short"})}${lv?'<em class="lv">Leave</em>':'<em data-c="tag"></em><span data-c="lv"></span>'}</th>`;
+  /* leave day: stall closed, nobody available — one wide cell instead of boxes */
+  if(lv)return`${tr}${sc}<td class="lvcell" colspan="${P.length*2+3}"><span>Stall closed</span><button class="quiet" data-act="unleave" data-d="${d}" aria-label="Undo leave for ${dshort(d)}">Undo leave</button></td><td class="x"></td></tr>`;
+  return`${tr}${sc}${P.map(p=>cell(p,"made")+cell(p,"sold")).join("")}
   <td class="m calc" data-c="rev"></td><td class="m in" data-c="cost"><input class="cell pc" inputmode="numeric" maxlength="9" autocomplete="off" enterkeyhint="next" data-d="${d}" data-f="cost" placeholder="₹0" aria-label="${lab}, cost (what was spent)"></td><td class="m pf" data-c="profit"></td><td class="x" data-c="del"></td></tr>`}
-function derive(){const T={rev:0,cost:0,profit:0},by=Object.fromEntries(P.map(p=>[p.id,{made:0,sold:0}])),issues=[],nocost=[],missing=[];
+function derive(){const T={rev:0,cost:0,profit:0},by=Object.fromEntries(P.map(p=>[p.id,{made:0,sold:0}])),issues=[],nocost=[],missing=[],leaves=[];let redraw=false;
   $$("tbody tr[data-d]").forEach(tr=>{const d=tr.dataset.d,day=D.days[d],c=day?calcDay(day):null,empty=!c||c.empty,q=s=>tr.querySelector(`[data-c="${s}"]`);
+    /* a row drawn for the other state (leave vs. normal) gets redrawn once */
+    if(!!c?.leave!==tr.hasAttribute("data-leave")){redraw=true;return}
+    if(c?.leave){leaves.push(d);return}
     q("rev").textContent=c&&c.counted?rs(c.rev):"–";
     const ci=q("cost").firstChild;if(document.activeElement!==ci)ci.value=c&&c.hasCost?rs(c.cost):"";
     const pf=q("profit"),tone=empty?"":c.profit<0?"neg":"pos";
@@ -327,16 +341,19 @@ function derive(){const T={rev:0,cost:0,profit:0},by=Object.fromEntries(P.map(p=
       if(!i){pf.innerHTML=`<input class="cell pc" inputmode="text" maxlength="9" autocomplete="off" enterkeyhint="next" data-d="${d}" data-f="profit" placeholder="₹0" aria-label="${dshort(d)}, profit">`;i=pf.firstChild}
       if(document.activeElement!==i)i.value=c&&c.manual?money(c.profit):""}
     const tag=q("tag");tag.textContent=d===TODAY()?"Today":empty?"Not filled":"";tag.className=empty?"miss":"";
+    const lb=q("lv");if(!!lb.firstChild!==empty)lb.innerHTML=empty?`<button class="lv-btn" data-act="leave" data-d="${d}" aria-label="Mark ${dshort(d)} as leave — stall closed, nobody available">Leave</button>`:"";
     const del=q("del");if(!!del.firstChild===empty)del.innerHTML=empty?"":`<button class="del" data-act="del-day" data-d="${d}" aria-label="Clear ${dshort(d)}">${ICON.trash}</button>`;
     if(empty){missing.push(d);return}
     if(c.counted)P.forEach(p=>{const x=day[p.id],bad=x.sold>x.made;tr.querySelector(`[data-k="${p.id}"][data-f="sold"]`).setAttribute("aria-invalid",bad);
       if(bad)issues.push(`${dshort(d)}: ${p.short} sold (${x.sold}) is more than made (${x.made}).`);by[p.id].made+=x.made;by[p.id].sold+=x.sold});
     if(c.rev>0&&!c.hasCost)nocost.push(d);
     T.rev+=c.rev;T.cost+=c.cost;T.profit+=c.profit});
+  if(redraw)return renderHome();
   $("#foot").innerHTML=`<th scope="row" class="sc">Total</th>${P.map(p=>`<td style="padding:12px">${by[p.id].made}</td><td style="padding:12px">${by[p.id].sold}</td>`).join("")}<td class="m">${rs(T.rev)}</td><td class="m">${rs(T.cost)}</td><td class="m ${T.profit<0?"neg":"pos"}">${money(T.profit)}</td><td class="x"></td>`;
   if(nocost.length)issues.push(`Cost not entered for ${nocost.map(dshort).join(", ")} — profit there is just sales until you add it.`);
   $("#issues").innerHTML=issues.length?`<div class="alert">${ICON.warn}<div><b>Please check:</b> ${issues.map(esc).join(" ")}</div></div>`:"";
   $("#status").innerHTML=`<span><b>${allDates().length} days</b> since ${fmtDate(START,{day:"numeric",month:"short"})}</span><span>Total profit <b class="${T.profit<0?"neg":"pos"}">${money(T.profit)}</b></span>
+  ${leaves.length?`<span><b>${pl(leaves.length,"leave day")}</b> (stall closed)</span>`:""}
   <span class="${missing.length?"miss":"done"}">${missing.length?`<b>${missing.length} not filled:</b> ${missing.map(dshort).join(", ")}`:"All days filled ✓"}</span>`}
 
 /* ---------- Dashboard ---------- */
@@ -350,7 +367,7 @@ function renderDash(){const t=TODAY();
     <button class="btn secondary" type="submit">Add cost</button><p class="ferr" id="ferr" role="alert" hidden></p></form><ul class="cl" id="costs"></ul></section>
   <section class="panel" aria-labelledby="pa-h"><h2 id="pa-h">Profit analysis</h2><div id="ana"></div></section>`;fillDash()}
 function fillDash(){const r=periodRange(S.per),a=analyse(r),same=r[0]===r[1],o={day:"numeric",month:"short",year:"numeric"};
-  $("#per-l").textContent=`${same?fmtDate(r[0],o):`${fmtDate(r[0],o)} – ${fmtDate(r[1],o)}`} · ${a.daily.length} filled · ${a.missing.length} not filled`;
+  $("#per-l").textContent=`${same?fmtDate(r[0],o):`${fmtDate(r[0],o)} – ${fmtDate(r[1],o)}`} · ${a.daily.length} filled · ${a.missing.length} not filled${a.leaves.length?` · ${pl(a.leaves.length,"leave day")}`:""}`;
   const max=Math.max(a.invested,1);
   $("#inv").innerHTML=`<div class="ir"><span class="ico">${ICON.grid}</span><span class="pn" style="font-size:16px">Daily costs</span><span class="amt">${rs(a.dcost)}</span><span class="sub">Cost column on Home</span><span class="sub" style="text-align:right">${pct(a.dcost,a.invested)}%</span><div class="bar"><i style="width:${a.dcost/max*100}%;background:var(--toast)"></i></div></div>
    <div class="ir"><span class="ico">${ICON.bag}</span><span class="pn" style="font-size:16px">Other costs</span><span class="amt">${rs(a.other)}</span><span class="sub">${pl(a.ex.length,"item")}</span><span class="sub" style="text-align:right">${pct(a.other,a.invested)}%</span><div class="bar"><i style="width:${a.other/max*100}%;background:var(--other)"></i></div></div>
@@ -386,6 +403,9 @@ document.addEventListener("click",e=>{const b=e.target.closest("[data-act]");if(
      toast(`<span>Cleared ${fmtDate(d,{day:"numeric",month:"long"})}.</span><button class="quiet" data-act="undo">Undo</button>`);S.undo=()=>{run("putDay",[d,day]);renderHome()}},
    "del-cost":()=>{const c=D.expenses.find(x=>x.id===b.dataset.id);run("delCost",[c.id]);fillDash();
      toast(`<span>Removed “${esc(c.name)}”.</span><button class="quiet" data-act="undo">Undo</button>`);S.undo=()=>{run("addCost",[c]);fillDash()}},
+   leave:()=>{const d=b.dataset.d;run("setLeave",[d,true]);renderHome();$(`tr[data-d="${d}"] [data-act=unleave]`)?.focus();
+     toast(`<span>${fmtDate(d,{day:"numeric",month:"long"})} marked as leave.</span><button class="quiet" data-act="undo">Undo</button>`);S.undo=()=>{run("setLeave",[d,false]);renderHome()}},
+   unleave:()=>{const d=b.dataset.d;run("setLeave",[d,false]);renderHome();$(`tr[data-d="${d}"] .cell`)?.focus()},
    undo:()=>{S.undo?.();S.undo=null;$("#toast").innerHTML=""}})[b.dataset.act]?.()});
 document.addEventListener("submit",e=>{e.preventDefault();const f=e.target;
   if(f.id==="login")return onLogin(f);

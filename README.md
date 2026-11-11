@@ -33,6 +33,7 @@ Then redeploy. Until these are set, the original passwords still work. Changing 
 
 ## Notes
 
+- **Leave:** tap **Leave** under a date when the stall was closed because nobody was available. That day stops counting as "not filled" and is left out of profit; **Undo leave** reopens it.
 - Opening `index.html` straight from the computer won't load numbers — the data lives on the server, so use the site's web address.
 - Numbers saved in a browser by the old version are added to the shared sheet automatically the first time that browser signs in (only days the shared sheet doesn't already have).
 - Adding a new user or item: update `USERS` / `ITEMS` in `netlify/functions/stall.mjs` and `P` in `index.html`.
