@@ -1,0 +1,9 @@
+{
+  "name": "morningstall",
+  "private": true,
+  "type": "module",
+  "description": "Morning Stall daily sheet with shared data for every login",
+  "dependencies": {
+    "@netlify/blobs": "^10.7.0"
+  }
+}

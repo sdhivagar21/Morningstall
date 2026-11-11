@@ -155,10 +155,9 @@ const STALL="Morning Stall";
 const P=[{id:"oats",name:"Overnight Oats",short:"Oats",cls:"io",color:"var(--oat)"},{id:"sand",name:"Veg Toast Sandwich",short:"Sandwich",cls:"is",color:"var(--toast)"}];
 const DEF_PRICES={oats:{price:50},sand:{price:50}};
 const START="2026-11-03"; /* the day the shop opened */
-/* Day 1–5: recorded as profit only, before item counts were kept */
-const HISTORY={"2026-11-03":540,"2026-11-04":-500,"2026-11-05":650,"2026-11-06":650,"2026-11-07":350};
-const USERS={john:{pw:"john123",name:"John"},dhivagar:{pw:"admin123",name:"Dhivagar"}};
-const K={db:"stall.v3",session:"stall.session"};
+/* Day 1–5 history, users and passwords now live on the server: netlify/functions/stall.mjs */
+const K={old:"stall.v3",moved:"stall.v3.moved",session:"stall.session2"};
+const POLL_MS=15000; /* how often to pick up the other person's changes while the page is open */
 
 /* ---------- helpers ---------- */
 const $=(s,r=document)=>r.querySelector(s),$$=(s,r=document)=>[...r.querySelectorAll(s)];
@@ -184,30 +183,75 @@ const ICON={out:svg('<path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3M10 17l5-
 
 /* ---------- data: one shared record for the stall ---------- */
 const newDay=prices=>({...Object.fromEntries(P.map(p=>[p.id,{made:0,sold:0}])),prices:clone(prices)});
-function initial(){const days={};for(const[d,v]of Object.entries(HISTORY)){days[d]=newDay(DEF_PRICES);days[d].profit=v}return{prices:clone(DEF_PRICES),days,expenses:[]}}
-/* every change is a small named operation, applied to the screen at once and then saved */
+/* every change is a small named operation, applied to the screen at once and then sent to the server,
+   which applies the same operation to the one shared record (keep in step with netlify/functions/stall.mjs) */
 const OPS={
   setCell(db,d,k,f,v){(db.days[d]||(db.days[d]=newDay(db.prices)))[k][f]=v},
   setProfit(db,d,v){const x=db.days[d]||(db.days[d]=newDay(db.prices));if(v==null)delete x.profit;else x.profit=v},
   setCost(db,d,v){const x=db.days[d]||(db.days[d]=newDay(db.prices));if(v==null)delete x.cost;else x.cost=v},
   delDay(db,d){delete db.days[d]},putDay(db,d,day){db.days[d]=day},
-  setPrice(db,k,f,v){db.prices[k][f]=v;const t=db.days[TODAY()];if(t)t.prices[k][f]=v},
-  addCost(db,e){db.expenses.push(e)},delCost(db,id){db.expenses=db.expenses.filter(e=>e.id!==id)}};
-/* storage layer: swap these two calls for your backend (e.g. GET /stall and POST /stall/ops) */
+  setPrice(db,k,f,v,today){db.prices[k][f]=v;const t=db.days[today];if(t)(t.prices||(t.prices=clone(db.prices)))[k][f]=v},
+  addCost(db,e){if(!db.expenses.some(x=>x.id===e.id))db.expenses.push(e)},delCost(db,id){db.expenses=db.expenses.filter(e=>e.id!==id)}};
 /* older saves priced each item's cost; turn that into the day's cost once so totals don't jump */
 function migrate(db){for(const day of Object.values(db.days)){const pr=day.prices||db.prices,m=P.reduce((a,p)=>a+(day[p.id]?.made||0),0);
   if(typeof day.cost!=="number"&&m>0&&P.some(p=>typeof pr[p.id]?.cost==="number"))day.cost=P.reduce((a,p)=>a+(day[p.id]?.made||0)*(pr[p.id]?.cost||0),0)}return db}
+/* ---------- server ---------- */
 const API={
-  async load(){let db=store.get(K.db,null);db=db?migrate(db):initial();store.set(K.db,db);return clone(db)},
-  async run(op,args){const db=store.get(K.db,null)||initial();OPS[op](db,...args);if(!store.set(K.db,db))throw new Error("save failed")}};
-let D=null;const pend=[],timers={};
-function run(op,args,key){OPS[op](D,...args);sync("busy");
-  const send=async()=>{if(key)delete timers[key];try{await API.run(op,args);if(!pend.length)sync("ok")}catch(e){pend.push([op,args]);sync("err")}};
+  async req(path,o={}){let r;
+    try{r=await fetch("/api/"+path,{cache:"no-store",keepalive:o.method==="POST"&&path==="ops",...o,
+      headers:{"content-type":"application/json",...(S.session?.token?{authorization:"Bearer "+S.session.token}:{})}})}
+    catch(e){const x=new Error("offline");x.status=0;throw x}
+    let b=null;try{b=await r.json()}catch(e){}
+    if(!r.ok||!b){const x=new Error(b?.error||"HTTP "+r.status);x.status=r.ok?502:r.status;throw x}return b},
+  login:(u,p)=>API.req("login",{method:"POST",body:JSON.stringify({u,p})}),
+  load:rev=>API.req("stall"+(rev!=null?"?rev="+rev:"")),
+  send:ops=>API.req("ops",{method:"POST",body:JSON.stringify({ops})})};
+let D=null,REV=null,SEQ=0,inflight=0;const pend=[],timers={};
+/* a change only goes to the screen and the server; nothing is kept in this browser any more */
+function run(op,args,key){OPS[op](D,...args);SEQ++;sync("busy");
+  /* a newer value for the same box replaces any older one still waiting to be resent */
+  const send=async()=>{if(key){delete timers[key];for(let i=pend.length;i--;)if(pend[i][2]===key)pend.splice(i,1)}
+    inflight++;try{await API.send([[op,args]])}catch(e){failed(e,[[op,args,key]])}finally{inflight--;settle()}};
   if(key){clearTimeout(timers[key]?.t);timers[key]={t:setTimeout(send,350),send}}else send()}
+function settle(){if(!inflight&&!Object.keys(timers).length){sync(pend.length?"err":"ok");if(refused)setTimeout(poll,50)}}
+let refused=false;
+function failed(e,ops){if(e.status===401)return expired();
+  /* the server refused the change: show what the server has instead of keeping a number nobody else sees */
+  if(e.status===400){refused=true;toast("That change couldn’t be saved, so the sheet was refreshed.",5000);return}
+  pend.push(...ops)}
 /* write any waiting change straight away when the page is hidden, closed or logged out */
 function flush(){Object.values(timers).forEach(x=>{clearTimeout(x.t);x.send()})}
-addEventListener("pagehide",flush);document.addEventListener("visibilitychange",()=>{if(document.hidden)flush()});
-async function retry(){const q=pend.splice(0);sync("busy");for(const[op,args]of q){try{await API.run(op,args)}catch(e){pend.push([op,args])}}sync(pend.length?"err":"ok")}
+addEventListener("pagehide",flush);
+async function retry(){if(!pend.length||inflight)return;const q=pend.splice(0);sync("busy");inflight++;
+  try{await API.send(q.map(([op,args])=>[op,args]))}catch(e){failed(e,q)}finally{inflight--;settle()}}
+function expired(){Object.values(timers).forEach(x=>clearTimeout(x.t));for(const k in timers)delete timers[k];pend.length=0;
+  store.del(K.session);S.session=null;D=null;REV=null;go();toast("Please sign in again.",5000)}
+/* pick up the other person's changes: cheap check every few seconds while the page is open */
+let pollT=null,polling=false;
+function startPoll(){clearInterval(pollT);pollT=setInterval(()=>{if(!document.hidden)poll()},POLL_MS)}
+function busy(){return pend.length||inflight||Object.keys(timers).length}
+async function poll(){if(!S.session||!D||polling)return;if(pend.length)return retry();if(busy())return;
+  const force=refused,seq=SEQ;polling=true;
+  try{const r=await API.load(force?null:REV);if(r.same||!S.session)return;
+    /* skip if something was typed while we were asking, or a box is being edited: try again next round */
+    if(seq!==SEQ||busy()||(!force&&document.activeElement?.matches?.("input,select,textarea")))return;
+    refused=false;const nd=migrate(r.db),changed=JSON.stringify(nd)!==JSON.stringify(D);REV=r.rev;D=nd;if(changed)refresh()}
+  catch(e){if(e.status===401)expired()}finally{polling=false}}
+document.addEventListener("visibilitychange",()=>{if(document.hidden)flush();else poll()});
+addEventListener("online",()=>poll());
+function refresh(){if(!$("#main"))return;const sh=$(".sheet"),x=sh?.scrollLeft||0,y=sh?.scrollTop||0;
+  S.page==="home"?renderHome():$("#ana")?fillDash():renderDash();const s2=$(".sheet");if(s2){s2.scrollLeft=x;s2.scrollTop=y}}
+/* numbers typed before the shared sheet existed are still in this browser: add the days the server doesn't have yet, once */
+async function moveLocal(){if(store.get(K.moved,false))return;const old=store.get(K.old,null);if(!old||!old.days){store.set(K.moved,true);return}
+  migrate(old);const ops=[],t=TODAY(),filled=day=>day&&!calcDay(day).empty;
+  for(const[d,day]of Object.entries(old.days))if(d>=START&&d<=t&&filled(day)&&!filled(D.days[d]))ops.push(["putDay",[d,clone(day)]]);
+  for(const e of old.expenses||[])if(!D.expenses.some(x=>x.id===e.id))ops.push(["addCost",[clone(e)]]);
+  const def=JSON.stringify(DEF_PRICES);
+  if(old.prices&&JSON.stringify(D.prices)===def)for(const p of P){const v=old.prices[p.id]?.price;if(typeof v==="number"&&v!==DEF_PRICES[p.id].price)ops.push(["setPrice",[p.id,"price",v,t]])}
+  if(!ops.length){store.set(K.moved,true);return}
+  try{inflight++;await API.send(ops);ops.forEach(([op,args])=>OPS[op](D,...args));D=migrate(D);store.set(K.moved,true);SEQ++;refresh();
+    const n=ops.filter(o=>o[0]==="putDay").length;toast(`Added ${n?pl(n,"day"):"your entries"} saved on this device to the shared sheet.`,6000)}
+  catch(e){/* try again next time the page opens */}finally{inflight--}}
 function sync(s){const el=$("#sync");if(!el)return;el.className="sync "+s;
   el.innerHTML=s==="ok"?ICON.tick+"Saved":s==="busy"?'<span class="spin"></span>Saving…':`<button class="quiet" data-act="retry" style="min-height:32px;color:inherit">Not saved · Retry</button>`}
 
@@ -226,12 +270,14 @@ function analyse(r){const items=Object.fromEntries(P.map(p=>[p.id,{made:0,sold:0
 
 /* ---------- app shell ---------- */
 const app=$("#app");const S={session:store.get(K.session,null),page:"home",month:null,per:"month",extra:new Set()};
-async function go(){if(!S.session)return loginView();
+const LOCAL=location.protocol==="file:";
+async function go(){clearInterval(pollT);if(!S.session?.token)return loginView();
   app.innerHTML=`<div class="main"><div class="sk" style="height:110px"></div><div class="sk" style="height:300px"></div><p class="sr" role="status">Loading…</p></div>`;
-  try{D=await API.load()}catch(e){app.innerHTML=`<div class="main"><div class="empty"><h2>Couldn’t load the stall’s numbers</h2><p class="muted">Check the connection and try again.</p><button class="btn primary" data-act="reload">Try again</button></div></div>`;return}
+  try{const r=await API.load();D=migrate(r.db);REV=r.rev}catch(e){if(e.status===401)return expired();
+    app.innerHTML=`<div class="main"><div class="empty"><h2>Couldn’t load the stall’s numbers</h2><p class="muted">${LOCAL?"This file was opened from the computer. Open the site from its web address — the shared numbers live on the server.":"Check the connection and try again."}</p><button class="btn primary" data-act="reload">Try again</button></div></div>`;return}
   app.innerHTML=`<header class="hdr"><div class="hdr-in"><p class="brand">${STALL}</p><nav class="tabs" aria-label="Pages"><a href="#home" data-tab="home">${ICON.grid}Home</a><a href="#dashboard" data-tab="dashboard">${ICON.chart}Dashboard</a></nav>
   <div class="hdr-r"><span id="sync" class="sync" aria-live="polite"></span><span class="who">${esc(S.session.name)}</span><button class="icon-btn" data-act="logout" aria-label="Log out">${ICON.out}</button></div></div></header><main id="main" class="main"></main>`;
-  sync(pend.length?"err":"ok");route()}
+  sync(pend.length?"err":"ok");route();startPoll();moveLocal()}
 function route(){if(!$("#main"))return;S.page=location.hash==="#dashboard"?"dashboard":"home";
   $$("[data-tab]").forEach(a=>a.dataset.tab===S.page?a.setAttribute("aria-current","page"):a.removeAttribute("aria-current"));
   document.title=`${STALL} · ${S.page==="home"?"Home":"Dashboard"}`;S.page==="home"?renderHome():renderDash()}
@@ -248,8 +294,10 @@ function loginView(){document.title=`${STALL} · Sign in`;
 async function onLogin(f){const btn=f.querySelector("[type=submit]"),er=$("#login-err"),u=f.u.value.trim().toLowerCase(),p=f.p.value;
   const fail=(m,el)=>{er.hidden=false;er.innerHTML=ICON.warn+`<span>${m}</span>`;el.focus()};
   if(!u||!p)return fail("Enter your username and password.",u?f.p:f.u);
-  const x=USERS[u];if(!x||x.pw!==p)return fail("That username or password doesn’t match. Try again.",f.p);
-  S.session={user:u,name:x.name};store.set(K.session,S.session);if(!location.hash)location.hash="home";go()}
+  if(btn.disabled)return;btn.disabled=true;btn.textContent="Signing in…";er.hidden=true;
+  let x;try{x=await API.login(u,p)}catch(e){btn.disabled=false;btn.textContent="Sign in";
+    return fail(e.status===401?"That username or password doesn’t match. Try again.":LOCAL?"Open the site from its web address to sign in — this file was opened from the computer.":"Couldn’t reach the server. Check the connection and try again.",f.p)}
+  S.session={user:x.user,name:x.name,token:x.token};store.set(K.session,S.session);store.del("stall.session");if(!location.hash)location.hash="home";go()}
 
 /* ---------- Home: one sheet, a row for every day since the shop opened ---------- */
 const dayNo=d=>Math.round((new Date(d+"T12:00")-new Date(START+"T12:00"))/864e5)+1;
@@ -332,7 +380,7 @@ function drawDaily(){const el=$("#daily");if(!el||!S.series)return;const s=S.ser
 
 /* ---------- events ---------- */
 document.addEventListener("click",e=>{const b=e.target.closest("[data-act]");if(!b||b.getAttribute("aria-disabled")==="true")return;
-  ({logout:()=>{flush();store.del(K.session);S.session=null;D=null;go()},reload:go,retry,
+  ({logout:()=>{flush();store.del(K.session);S.session=null;D=null;REV=null;go()},reload:go,retry,
    per:()=>{S.per=b.dataset.per;$$("[data-per]").forEach(c=>c.setAttribute("aria-pressed",c===b));fillDash()},
    "del-day":()=>{const d=b.dataset.d,day=clone(D.days[d]);run("delDay",[d]);renderHome();
      toast(`<span>Cleared ${fmtDate(d,{day:"numeric",month:"long"})}.</span><button class="quiet" data-act="undo">Undo</button>`);S.undo=()=>{run("putDay",[d,day]);renderHome()}},
@@ -350,7 +398,7 @@ document.addEventListener("input",e=>{const i=e.target,f=i.dataset.f;
     run("setProfit",[i.dataset.d,n===""?null:(neg?-1:1)*+n],i.dataset.d+"p");derive();return}
   if(i.classList.contains("cell")||i.hasAttribute("data-price")||i.name==="a"){const v=i.value.replace(/\D/g,"").slice(0,f==="cost"?6:4);if(v!==i.value)i.value=v}
   if(f==="cost"){run("setCost",[i.dataset.d,i.value===""?null:+i.value],i.dataset.d+"c");derive();return}
-  if(f==="price"){run("setPrice",[i.dataset.k,"price",+i.value||0],"p"+i.dataset.k);derive();return}
+  if(f==="price"){run("setPrice",[i.dataset.k,"price",+i.value||0,TODAY()],"p"+i.dataset.k);derive();return}
   if(i.classList.contains("cell")){const{d,k}=i.dataset;run("setCell",[d,k,f,+i.value||0],d+k+f);derive()}});
 /* first keystroke after focusing a box replaces its number (like a spreadsheet) */
 document.addEventListener("focusin",e=>{const i=e.target;if(!i.matches?.(".cell,[data-price]"))return;i.dataset.fresh=1;setTimeout(()=>{if(i.dataset.fresh)try{i.setSelectionRange(0,9)}catch(x){}},0)});
@@ -367,8 +415,8 @@ document.addEventListener("keydown",e=>{const i=e.target;if(!i.classList?.contai
   const col=$$(i.dataset.k?`.cell[data-k="${i.dataset.k}"][data-f="${i.dataset.f}"]`:`.cell[data-f="${i.dataset.f}"]`),n=col[col.indexOf(i)+dir];n?.focus()});
 addEventListener("hashchange",()=>{if(S.session&&D)route()});
 addEventListener("resize",()=>{if(S.page==="dashboard")requestAnimationFrame(drawDaily)});
-/* the other person's changes (another tab here; your backend's push/poll in production) */
-addEventListener("storage",async e=>{if(e.key!==K.db||!D)return;D=await API.load();if(!document.activeElement?.matches("input"))route()});
+/* after leaving a box, pick up anything the other person changed meanwhile */
+document.addEventListener("focusout",()=>setTimeout(()=>{if(!document.activeElement?.matches?.("input,select,textarea"))poll()},500));
 go();
 </script>
 </body>
