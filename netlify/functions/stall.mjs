@@ -78,8 +78,6 @@ const OPS = {
   setPrice(db, k, f, v, today) { db.prices[k][f] = v; const t = db.days[today]; if (t) (t.prices ||= clone(db.prices))[k][f] = v; },
   addCost(db, e) { if (!db.expenses.some((x) => x.id === e.id)) db.expenses.push(e); },
   delCost(db, id) { db.expenses = db.expenses.filter((e) => e.id !== id); },
-  /* cash actually in hand right now — kept apart from profit and loss */
-  setPocket(db, v) { if (v == null) delete db.pocket; else db.pocket = v; },
 };
 
 /* ---------- checking what the page sends ---------- */
@@ -122,12 +120,6 @@ function check(name, a) {
         ? [{ id: e.id, date: e.date, name, amount: e.amount }] : null;
     }
     case "delCost": return typeof a[0] === "string" && a[0].length <= 40 ? [a[0]] : null;
-    case "setPocket": {
-      const v = a[0];
-      if (v === null) return [null];
-      return v && typeof v === "object" && isInt(v.amount, 0, MAXRS) && isDate(v.date) && Object.values(USERS).some((x) => x.name === v.by)
-        ? [{ amount: v.amount, date: v.date, by: v.by }] : null;
-    }
     default: return null;
   }
 }
