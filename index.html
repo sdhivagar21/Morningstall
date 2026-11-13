@@ -315,9 +315,9 @@ const dshort=d=>fmtDate(d,{weekday:"short",day:"numeric",month:"short"});
 function renderHome(){const ds=allDates(),multi=ds[0].slice(0,7)!==ds[ds.length-1].slice(0,7),hd=f=>`<th scope="col">${f}</th>`;let lastM="";
   $("#main").innerHTML=`<p id="status" class="status" aria-live="polite"></p>
   <div class="sheet" role="region" aria-labelledby="cap" tabindex="-1"><table class="grid"><caption id="cap" class="sr">Daily sheet since ${fmtDate(START,{day:"numeric",month:"long",year:"numeric"})}</caption>
-  <thead><tr><th class="sc" rowspan="2" scope="col">Day</th>${P.map(p=>`<th class="grp" colspan="2" scope="colgroup"><span>${img(p)}${p.short}</span></th>`).join("")}<th class="grp" colspan="3" scope="colgroup">Day total</th><th rowspan="3" class="x"><span class="sr">Clear</span></th></tr>
-  <tr>${P.map(()=>hd("Made")+hd("Sold")).join("")}${hd("Sales")}${hd("Cost")}${hd("Profit")}</tr>
-  <tr class="prow2"><th class="sc" scope="row">Price each</th>${P.map(p=>`<td colspan="2"><span class="pin">₹<input data-price data-k="${p.id}" data-f="price" inputmode="numeric" maxlength="4" autocomplete="off" value="${D.prices[p.id].price}" aria-label="${p.short} price each"></span></td>`).join("")}<td colspan="3" class="pnote"></td></tr></thead>
+  <thead><tr><th class="sc" rowspan="2" scope="col">Day</th><th class="grp" colspan="${P.length}" scope="colgroup">Made</th><th class="grp" colspan="${P.length}" scope="colgroup">Sold</th><th class="grp" colspan="3" scope="colgroup">Day total</th><th rowspan="3" class="x"><span class="sr">Clear</span></th></tr>
+  <tr>${[...P,...P].map(p=>`<th class="grp" scope="col"><span>${img(p)}${p.short}</span></th>`).join("")}${hd("Sales")}${hd("Cost")}${hd("Profit")}</tr>
+  <tr class="prow2"><th class="sc" scope="row">Price each</th><td colspan="${P.length}"></td>${P.map(p=>`<td><span class="pin">₹<input data-price data-k="${p.id}" data-f="price" inputmode="numeric" maxlength="4" autocomplete="off" value="${D.prices[p.id].price}" aria-label="${p.short} price each"></span></td>`).join("")}<td colspan="3" class="pnote"></td></tr></thead>
   <tbody>${ds.map(d=>{const m=d.slice(0,7),sep=multi&&m!==lastM?`<tr class="mrow"><th colspan="${P.length*2+5}" scope="rowgroup">${monthName(m)}</th></tr>`:"";lastM=m;return sep+row(d)}).join("")}</tbody>
   <tfoot><tr id="foot"></tr></tfoot></table></div><div id="issues" aria-live="polite"></div>
   <p class="hint">Type in the white boxes — the rest fills in by itself. No counts for a day? Type its profit (− for a loss). Stall closed? Tap <b>Leave</b>. A new price counts from today.</p>`;
@@ -328,7 +328,7 @@ function row(d){const day=D.days[d],c=day&&calcDay(day),lab=fmtDate(d,{day:"nume
     sc=`<th scope="row" class="sc"><small>Day ${dayNo(d)}</small>${fmtDate(d,{weekday:"short"})} <b>${+d.slice(8)}</b> ${fmtDate(d,{month:"short"})}${lv?"":'<em data-c="tag"></em><span data-c="lv"></span>'}</th>`;
   /* leave day: stall closed, nobody available — one wide cell instead of boxes */
   if(lv)return`${tr}${sc}<td class="lvcell" colspan="${P.length*2+3}"><span>Stall closed</span><button class="quiet" data-act="unleave" data-d="${d}" aria-label="Undo leave for ${dshort(d)}">Undo leave</button></td><td class="x"></td></tr>`;
-  return`${tr}${sc}${P.map(p=>cell(p,"made")+cell(p,"sold")).join("")}
+  return`${tr}${sc}${P.map(p=>cell(p,"made")).join("")}${P.map(p=>cell(p,"sold")).join("")}
   <td class="m calc" data-c="rev"></td><td class="m in" data-c="cost"><input class="cell pc" inputmode="numeric" maxlength="9" autocomplete="off" enterkeyhint="next" data-d="${d}" data-f="cost" aria-label="${lab}, cost (what was spent)"></td><td class="m pf" data-c="profit"></td><td class="x" data-c="del"></td></tr>`}
 function derive(){const T={rev:0,cost:0,profit:0},by=Object.fromEntries(P.map(p=>[p.id,{made:0,sold:0}])),issues=[],nocost=[],missing=[],leaves=[];let redraw=false;
   $$("tbody tr[data-d]").forEach(tr=>{const d=tr.dataset.d,day=D.days[d],c=day?calcDay(day):null,empty=!c||c.empty,q=s=>tr.querySelector(`[data-c="${s}"]`);
@@ -351,7 +351,7 @@ function derive(){const T={rev:0,cost:0,profit:0},by=Object.fromEntries(P.map(p=
     if(c.rev>0&&!c.hasCost)nocost.push(d);
     T.rev+=c.rev;T.cost+=c.cost;T.profit+=c.profit});
   if(redraw)return renderHome();
-  $("#foot").innerHTML=`<th scope="row" class="sc">Total</th>${P.map(p=>`<td style="padding:12px">${by[p.id].made}</td><td style="padding:12px">${by[p.id].sold}</td>`).join("")}<td class="m">${rs(T.rev)}</td><td class="m">${rs(T.cost)}</td><td class="m ${T.profit<0?"neg":"pos"}">${money(T.profit)}</td><td class="x"></td>`;
+  $("#foot").innerHTML=`<th scope="row" class="sc">Total</th>${["made","sold"].map(f=>P.map(p=>`<td style="padding:12px">${by[p.id][f]}</td>`).join("")).join("")}<td class="m">${rs(T.rev)}</td><td class="m">${rs(T.cost)}</td><td class="m ${T.profit<0?"neg":"pos"}">${money(T.profit)}</td><td class="x"></td>`;
   if(nocost.length)issues.push(`Cost not entered for ${nocost.map(dshort).join(", ")} — profit there is just sales until you add it.`);
   $("#issues").innerHTML=issues.length?`<div class="alert">${ICON.warn}<div><b>Please check:</b> ${issues.map(esc).join(" ")}</div></div>`:"";
   $("#status").innerHTML=`<span>Total profit <b class="${T.profit<0?"neg":"pos"}">${money(T.profit)}</b></span>
