@@ -74,15 +74,17 @@ h3{font-size:18px;margin:22px 0 10px}h3 span{font:500 14px var(--bf);color:var(-
 .grid thead .grp{text-align:center;font-size:14px}.grp span{display:inline-flex;align-items:center;gap:6px}.grp .thumb{--s:26px}
 .grid .sc{position:sticky;left:0;z-index:1;background:#fff;text-align:left;padding:4px 8px 4px 10px;width:94px;min-width:94px;font-weight:500;border-right:2px solid var(--line);line-height:1.15}
 .grid thead .sc{background:var(--head);z-index:2}.sc b{font-size:16px}.sc small{display:block;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}.sc em{display:block;font-style:normal;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--toast)}.sc em.miss{color:var(--loss)}
+.grid tr[hidden]{display:none}.mt{display:flex;align-items:center;flex-wrap:wrap;gap:4px 8px;min-height:40px;font:inherit;color:inherit;text-align:left}
+.mt .chev{display:inline-block;transition:transform .15s}.mt[aria-expanded=true] .chev{transform:rotate(90deg)}.mt .ms{font:600 13px var(--bf);color:var(--muted)}
 .mrow th{background:var(--cream)!important;text-align:left!important;padding:8px 10px!important;font:800 15px var(--hf)!important;color:var(--green)}
-.m.in{padding:0!important}.pc{width:100%;min-width:96px}.pf.in.pos .pc{color:var(--gain)}.pf.in.neg .pc{color:var(--loss)}
+.m.in{padding:0!important}.pc{width:100%;min-width:132px}.pf.in.pos .pc{color:var(--gain)}.pf.in.neg .pc{color:var(--loss)}
 .grid td.calc{background:#F7F0E1}.grid tfoot td,.grid tfoot th{background:var(--head)}
 .grid thead .prow2 th,.prow2 td{background:#FFFBF2!important;padding:6px 8px!important;text-align:left!important;font-weight:700;color:var(--green)}
 .pin{display:inline-flex;align-items:center;font-weight:700;color:var(--green);border:2px solid #D9CCB1;border-radius:10px;background:#fff;padding-left:10px;height:42px}.pin:focus-within{border-color:var(--green)}
-.pin input{width:54px;height:38px;border:0;background:none;font-size:17px;font-weight:700;color:var(--green);padding:0 6px}.pin input:focus-visible{outline:none}
+.pin input{width:72px;height:38px;border:0;background:none;font-size:17px;font-weight:700;color:var(--green);padding:0 6px}.pin input:focus-visible{outline:none}
 .pnote{font-size:13px;font-weight:500!important;color:var(--muted)!important;white-space:normal!important}
 .status{display:flex;flex-wrap:wrap;gap:4px 16px;font-size:15px;color:var(--muted);background:#fff;border:1px solid var(--line);border-radius:12px;padding:10px 14px}.status b{color:var(--ink)}.status b.pos{color:var(--gain)}.status b.neg{color:var(--loss)}.status .miss,.status .miss b{color:var(--loss)}.status .done{color:var(--gain);font-weight:700}
-.cell{width:64px;height:50px;border:0;background:transparent;text-align:right;padding:0 10px;font-size:18px;font-weight:700;color:var(--green);border-radius:0}
+.cell{width:76px;height:50px;border:0;background:transparent;text-align:right;padding:0 10px;font-size:18px;font-weight:700;color:var(--green);border-radius:0}
 .cell::placeholder{color:#CBBFA9;font-weight:500}.cell:focus-visible{outline:none}
 .cell:focus{box-shadow:inset 0 0 0 3px var(--green);background:#FFFDF5}
 .cell[aria-invalid=true]{background:#FBE3DC;color:var(--loss);box-shadow:inset 0 0 0 2px var(--loss)}
@@ -116,11 +118,13 @@ h3{font-size:18px;margin:22px 0 10px}h3 span{font:500 14px var(--bf);color:var(-
 .tot{display:flex;justify-content:space-between;align-items:baseline;border-top:2px solid var(--green);margin-top:6px;padding-top:12px;font-weight:700;color:var(--green)}.tot b{font-size:22px}
 .addc{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px}.addc .wide{grid-column:1/-1}.addc .money{height:52px}.addc .money input{width:100%}
 .addc .btn{grid-column:1/-1}.ferr{grid-column:1/-1;color:var(--loss);font-size:14px;font-weight:700}
-.cl{list-style:none;margin-top:12px}.cl li{display:grid;grid-template-columns:1fr auto 44px;gap:10px;align-items:center;padding:8px 0;border-top:1px solid var(--line)}
-.cl .d{font-size:13px;color:var(--muted);display:block}.cl b{color:var(--green)}
+.cl{list-style:none;margin-top:10px}.cl li{display:grid;grid-template-columns:52px minmax(0,1fr) auto 44px;gap:8px;align-items:center;min-height:46px;border-top:1px solid var(--line)}.cl li.none{display:block;padding:10px 0}
+.cl .cn{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.cl li.cm{display:flex;justify-content:space-between;min-height:0;margin-top:10px;padding:7px 10px;border:0;border-radius:10px;background:var(--cream);font-size:14px;font-weight:700;color:var(--green)}
+.cmore{margin-top:4px}
+.cl .d{font-size:13px;color:var(--muted)}.cl b{color:var(--green)}
 .kpis{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
 .kpi{background:var(--cream);border-radius:16px;padding:14px}.kpi span{display:block;font-size:13px;font-weight:700;color:var(--muted)}
-.kpi b{display:block;font-size:clamp(22px,6.4vw,30px);line-height:1.15;color:var(--green);letter-spacing:-.02em}.kpi small{font-size:13px;color:var(--muted)}
+.kpi b{display:block;overflow-wrap:anywhere;font-size:clamp(19px,5.6vw,30px);line-height:1.15;color:var(--green);letter-spacing:-.02em}.kpi small{font-size:13px;color:var(--muted)}
 .kpi.hl{background:var(--green)}.kpi.hl span,.kpi.hl small{color:rgba(255,248,236,.85)}.kpi.hl b{color:var(--mango)}.kpi.hl.lossk b{color:#FFB3A1}
 .pk{background:var(--cream);border:2px solid var(--line);border-radius:18px;padding:16px 18px;margin-top:12px}.pk span{font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
 .pk b{display:block;font:700 clamp(34px,10vw,46px)/1.1 var(--bf);letter-spacing:-.03em;color:var(--green);margin:4px 0 6px}.pk b.neg{color:var(--loss)}.pk small{font-size:14px;color:var(--muted)}
@@ -278,7 +282,7 @@ function analyse(r){const items=Object.fromEntries(P.map(p=>[p.id,{made:0,sold:0
   return{daily,items,rev,dcost,other,ex,invested:dcost+other,net:rev-dcost+manual-other,made,sold,manual,mdays,missing,nocost,cdays,leaves}}
 
 /* ---------- app shell ---------- */
-const app=$("#app");const S={session:store.get(K.session,null),page:"home",month:null,per:"month",extra:new Set()};
+const app=$("#app");const S={session:store.get(K.session,null),page:"home",month:null,per:"month",extra:new Set(),mo:{},allc:false};
 const LOCAL=location.protocol==="file:";
 async function go(){clearInterval(pollT);if(!S.session?.token)return loginView();
   app.innerHTML=`<div class="main"><div class="sk" style="height:110px"></div><div class="sk" style="height:300px"></div><p class="sr" role="status">Loading…</p></div>`;
@@ -312,25 +316,28 @@ async function onLogin(f){const btn=f.querySelector("[type=submit]"),er=$("#logi
 const dayNo=d=>Math.round((new Date(d+"T12:00")-new Date(START+"T12:00"))/864e5)+1;
 function allDates(){const out=[],t=TODAY();for(let d=START;d<=t;d=addDays(d,1))out.push(d);return out}
 const dshort=d=>fmtDate(d,{weekday:"short",day:"numeric",month:"short"});
+/* a month is open if it was opened, or by default when it is this month or still has days to fill */
+const monthOpen=m=>S.mo[m]??(m===TODAY().slice(0,7)||allDates().some(d=>d.startsWith(m)&&(c=>!c||c.empty)(D.days[d]&&calcDay(D.days[d]))));
 function renderHome(){const ds=allDates(),multi=ds[0].slice(0,7)!==ds[ds.length-1].slice(0,7),hd=f=>`<th scope="col">${f}</th>`;let lastM="";
   $("#main").innerHTML=`<p id="status" class="status" aria-live="polite"></p>
   <div class="sheet" role="region" aria-labelledby="cap" tabindex="-1"><table class="grid"><caption id="cap" class="sr">Daily sheet since ${fmtDate(START,{day:"numeric",month:"long",year:"numeric"})}</caption>
   <thead><tr><th class="sc" rowspan="2" scope="col">Day</th><th class="grp" colspan="${P.length}" scope="colgroup">Made</th><th class="grp" colspan="${P.length}" scope="colgroup">Sold</th><th class="grp" rowspan="2" scope="col">Profit</th><th rowspan="3" class="x"><span class="sr">Clear</span></th></tr>
   <tr>${[...P,...P].map(p=>`<th class="grp" scope="col"><span>${img(p)}${p.short}</span></th>`).join("")}</tr>
-  <tr class="prow2"><th class="sc" scope="row">Price each</th><td colspan="${P.length}"></td>${P.map(p=>`<td><span class="pin">₹<input data-price data-k="${p.id}" data-f="price" inputmode="numeric" maxlength="4" autocomplete="off" value="${D.prices[p.id].price}" aria-label="${p.short} price each"></span></td>`).join("")}<td class="pnote"></td></tr></thead>
-  <tbody>${ds.map(d=>{const m=d.slice(0,7),sep=multi&&m!==lastM?`<tr class="mrow"><th colspan="${P.length*2+3}" scope="rowgroup">${monthName(m)}</th></tr>`:"";lastM=m;return sep+row(d)}).join("")}</tbody>
+  <tr class="prow2"><th class="sc" scope="row">Price each</th><td colspan="${P.length}"></td>${P.map(p=>`<td><span class="pin">₹<input data-price data-k="${p.id}" data-f="price" inputmode="numeric" maxlength="5" autocomplete="off" value="${D.prices[p.id].price}" aria-label="${p.short} price each"></span></td>`).join("")}<td class="pnote"></td></tr></thead>
+  <tbody>${ds.map(d=>{const m=d.slice(0,7),sep=multi&&m!==lastM?`<tr class="mrow"><th colspan="${P.length*2+3}" scope="rowgroup"><button class="mt" data-act="month" data-m="${m}" aria-expanded="${monthOpen(m)}"><span class="chev" aria-hidden="true">▸</span>${monthName(m)}<span class="ms" data-ms="${m}"></span></button></th></tr>`:"";lastM=m;return sep+row(d)}).join("")}</tbody>
   <tfoot><tr id="foot"></tr></tfoot></table></div><div id="issues" aria-live="polite"></div>
   <p class="hint">Type in the white boxes — the rest fills in by itself. No counts for a day? Type its profit (− for a loss). Stall closed? Tap <b>Leave</b>. A new price counts from today.</p>`;
+  if(multi)$$("tbody tr[data-d]").forEach(tr=>tr.hidden=!monthOpen(tr.dataset.d.slice(0,7)));
   derive()}
 function row(d){const day=D.days[d],c=day&&calcDay(day),lab=fmtDate(d,{day:"numeric",month:"short"});
-  const cell=(p,f)=>`<td><input class="cell" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="off" enterkeyhint="next" data-d="${d}" data-k="${p.id}" data-f="${f}" value="${c&&c.counted?day[p.id][f]:""}" aria-label="${lab}, ${p.short} ${f}"></td>`;
+  const cell=(p,f)=>`<td><input class="cell" inputmode="numeric" pattern="[0-9]*" maxlength="5" autocomplete="off" enterkeyhint="next" data-d="${d}" data-k="${p.id}" data-f="${f}" value="${c&&c.counted?day[p.id][f]:""}" aria-label="${lab}, ${p.short} ${f}"></td>`;
   const lv=c&&c.leave,tr=`<tr data-d="${d}"${lv?" data-leave":""}${d===TODAY()?' class="is-today"':""}>`,
     sc=`<th scope="row" class="sc"><small>Day ${dayNo(d)}</small>${fmtDate(d,{weekday:"short"})} <b>${+d.slice(8)}</b> ${fmtDate(d,{month:"short"})}${lv?"":'<em data-c="tag"></em><span data-c="lv"></span>'}</th>`;
   /* leave day: stall closed, nobody available — one wide cell instead of boxes */
   if(lv)return`${tr}${sc}<td class="lvcell" colspan="${P.length*2+1}"><span>Stall closed</span><button class="quiet" data-act="unleave" data-d="${d}" aria-label="Undo leave for ${dshort(d)}">Undo leave</button></td><td class="x"></td></tr>`;
   return`${tr}${sc}${P.map(p=>cell(p,"made")).join("")}${P.map(p=>cell(p,"sold")).join("")}
   <td class="m pf" data-c="profit"></td><td class="x" data-c="del"></td></tr>`}
-function derive(){const T={rev:0,cost:0,profit:0},by=Object.fromEntries(P.map(p=>[p.id,{made:0,sold:0}])),issues=[],nocost=[],missing=[],leaves=[];let redraw=false;
+function derive(){const T={rev:0,cost:0,profit:0},by=Object.fromEntries(P.map(p=>[p.id,{made:0,sold:0}])),issues=[],nocost=[],missing=[],leaves=[],mp={},mm={};let redraw=false;
   $$("tbody tr[data-d]").forEach(tr=>{const d=tr.dataset.d,day=D.days[d],c=day?calcDay(day):null,empty=!c||c.empty,q=s=>tr.querySelector(`[data-c="${s}"]`);
     /* a row drawn for the other state (leave vs. normal) gets redrawn once */
     if(!!c?.leave!==tr.hasAttribute("data-leave")){redraw=true;return}
@@ -338,16 +345,18 @@ function derive(){const T={rev:0,cost:0,profit:0},by=Object.fromEntries(P.map(p=
     const pf=q("profit"),tone=empty?"":c.profit<0?"neg":"pos";
     if(c&&c.data){pf.className="m pf calc "+tone;pf.textContent=money(c.profit)}
     else{pf.className="m pf in "+tone;let i=pf.querySelector("input");
-      if(!i){pf.innerHTML=`<input class="cell pc" inputmode="text" maxlength="9" autocomplete="off" enterkeyhint="next" data-d="${d}" data-f="profit" aria-label="${dshort(d)}, profit">`;i=pf.firstChild}
+      if(!i){pf.innerHTML=`<input class="cell pc" inputmode="text" maxlength="15" autocomplete="off" enterkeyhint="next" data-d="${d}" data-f="profit" aria-label="${dshort(d)}, profit">`;i=pf.firstChild}
       if(document.activeElement!==i)i.value=c&&c.manual?money(c.profit):""}
     const tag=q("tag");tag.textContent=d===TODAY()?"Today":"";
     const lb=q("lv");if(!!lb.firstChild!==empty)lb.innerHTML=empty?`<button class="lv-btn" data-act="leave" data-d="${d}" aria-label="Mark ${dshort(d)} as leave — stall closed, nobody available">Leave</button>`:"";
     const del=q("del");if(!!del.firstChild===empty)del.innerHTML=empty?"":`<button class="del" data-act="del-day" data-d="${d}" aria-label="Clear ${dshort(d)}">${ICON.trash}</button>`;
-    if(empty){missing.push(d);return}
+    if(empty){missing.push(d);mm[d.slice(0,7)]=(mm[d.slice(0,7)]||0)+1;return}
+    mp[d.slice(0,7)]=(mp[d.slice(0,7)]||0)+c.profit;
     if(c.counted)P.forEach(p=>{const x=day[p.id],bad=x.sold>x.made;tr.querySelector(`[data-k="${p.id}"][data-f="sold"]`).setAttribute("aria-invalid",bad);
       if(bad)issues.push(`${dshort(d)}: ${p.short} sold (${x.sold}) is more than made (${x.made}).`);by[p.id].made+=x.made;by[p.id].sold+=x.sold});
     T.rev+=c.rev;T.cost+=c.cost;T.profit+=c.profit});
   if(redraw)return renderHome();
+  $$("[data-ms]").forEach(el=>{const m=el.dataset.ms,v=mp[m]||0;el.innerHTML=`· <b class="${v<0?"neg":"pos"}">${money(v)}</b> profit${mm[m]?` · <span class="neg">${mm[m]} not filled</span>`:""}`});
   $("#foot").innerHTML=`<th scope="row" class="sc">Total</th>${["made","sold"].map(f=>P.map(p=>`<td style="padding:12px">${by[p.id][f]}</td>`).join("")).join("")}<td class="m ${T.profit<0?"neg":"pos"}">${money(T.profit)}</td><td class="x"></td>`;
   $("#issues").innerHTML=issues.length?`<div class="alert">${ICON.warn}<div><b>Please check:</b> ${issues.map(esc).join(" ")}</div></div>`:"";
   $("#status").innerHTML=`<span>Total profit <b class="${T.profit<0?"neg":"pos"}">${money(T.profit)}</b></span>
@@ -360,8 +369,8 @@ function renderDash(){const t=TODAY();
   <section class="panel" aria-labelledby="inv-h"><h2 id="inv-h">What you invest in</h2><div id="inv" style="margin-top:8px"></div>
    <h3>Other costs</h3><p class="muted" style="font-size:14px">Anything you spend on the stall — gas, cups, bags, stall rent.</p>
    <form id="addc" class="addc" novalidate><label class="field wide">What for<input class="inp" name="n" maxlength="60" placeholder="e.g. Gas refill"></label>
-    <label class="field">Amount<span class="money">₹<input name="a" inputmode="numeric" maxlength="6" placeholder="0"></span></label><label class="field">Date<input class="inp" type="date" name="d" value="${t}" min="${START}" max="${t}"></label>
-    <button class="btn secondary" type="submit">Add cost</button><p class="ferr" id="ferr" role="alert" hidden></p></form><ul class="cl" id="costs"></ul></section>
+    <label class="field">Amount<span class="money">₹<input name="a" inputmode="numeric" maxlength="9" placeholder="0"></span></label><label class="field">Date<input class="inp" type="date" name="d" value="${t}" min="${START}" max="${t}"></label>
+    <button class="btn secondary" type="submit">Add cost</button><p class="ferr" id="ferr" role="alert" hidden></p></form><ul class="cl" id="costs"></ul><div class="cmore" id="cmore"></div></section>
   <section class="panel" aria-labelledby="pk-h"><h2 id="pk-h">Money in pocket</h2><div id="pk"></div></section>
   <section class="panel" aria-labelledby="pa-h"><h2 id="pa-h">Profit analysis</h2><div id="ana"></div></section>`;fillDash()}
 /* in pocket = daily profit added up (sales − that day's cost) − other costs.
@@ -388,7 +397,12 @@ function fillDash(){fillPocket();const r=periodRange(S.per),a=analyse(r),same=r[
   $("#inv").innerHTML=`<div class="ir"><span class="ico">${ICON.grid}</span><span class="pn" style="font-size:16px">Daily costs</span><span class="amt">${rs(a.dcost)}</span><span class="sub">Saved on Home earlier</span><span class="sub" style="text-align:right">${pct(a.dcost,a.invested)}%</span><div class="bar"><i style="width:${a.dcost/max*100}%;background:var(--toast)"></i></div></div>
    <div class="ir"><span class="ico">${ICON.bag}</span><span class="pn" style="font-size:16px">Other costs</span><span class="amt">${rs(a.other)}</span><span class="sub">${pl(a.ex.length,"item")}</span><span class="sub" style="text-align:right">${pct(a.other,a.invested)}%</span><div class="bar"><i style="width:${a.other/max*100}%;background:var(--other)"></i></div></div>
    <div class="tot"><span>Total invested</span><b>${rs(a.invested)}</b></div>`;
-  $("#costs").innerHTML=a.ex.length?a.ex.map(e=>`<li><span><span class="d">${fmtDate(e.date,{day:"numeric",month:"short"})}</span>${esc(e.name)}</span><b>${rs(e.amount)}</b><button class="del" data-act="del-cost" data-id="${e.id}" aria-label="Delete ${esc(e.name)}">${ICON.trash}</button></li>`).join(""):`<li style="display:block" class="muted">No other costs in this period.</li>`;
+  /* newest few by default; "show all" lists every one, grouped by month with the month's total */
+  const LIM=6,ex=a.ex,crow=e=>`<li><span class="d">${fmtDate(e.date,{day:"numeric",month:"short"})}</span><span class="cn" title="${esc(e.name)}">${esc(e.name)}</span><b>${rs(e.amount)}</b><button class="del" data-act="del-cost" data-id="${e.id}" aria-label="Delete ${esc(e.name)}, ${fmtDate(e.date,{day:"numeric",month:"short"})}">${ICON.trash}</button></li>`;
+  let ch="";if(S.allc&&ex.length>LIM){const mt={};ex.forEach(e=>{const m=e.date.slice(0,7);mt[m]=(mt[m]||0)+e.amount});let lm="";
+    ex.forEach(e=>{const m=e.date.slice(0,7);if(m!==lm){ch+=`<li class="cm"><span>${monthName(m)}</span><span>${rs(mt[m])}</span></li>`;lm=m}ch+=crow(e)})}else ch=ex.slice(0,LIM).map(crow).join("");
+  $("#costs").innerHTML=ex.length?ch:`<li class="none muted">No other costs in this period.</li>`;
+  $("#cmore").innerHTML=ex.length>LIM?`<button class="quiet" data-act="allc" aria-expanded="${S.allc}">${S.allc?"Show fewer":`Show all ${ex.length} costs · ${rs(a.other)}`}</button>`:"";
   const el=$("#ana");
   if(!a.daily.length&&!a.ex.length){el.innerHTML=`<div class="empty"><p class="muted">No numbers in this period yet.</p><a class="btn primary" href="#home">Go to the daily sheet</a></div>`;return}
   const net=a.net,ng=net<0,best=[...a.daily].sort((x,y)=>y.v-x.v),lo=best[best.length-1],dl=x=>`Day ${dayNo(x.d)}, ${dshort(x.d)}`;
@@ -397,18 +411,21 @@ function fillDash(){fillPocket();const r=periodRange(S.per),a=analyse(r),same=r[
   el.innerHTML=`<div class="big-p${ng?" neg":""}"><span>${ng?"Loss":"Profit"} · ${PER[S.per].toLowerCase()}</span><b>${money(net)}</b>
    <small>${rs(a.rev)} sales − ${rs(a.invested)} spent${a.mdays.length?` ${a.manual<0?"−":"+"} ${rs(a.manual)} from ${dlist} (profit only)`:""}</small></div>
    <div class="kpis2"><div class="kpi"><span>Total sales</span><b>${rs(a.rev)}</b></div><div class="kpi"><span>Total spent</span><b>${rs(a.invested)}</b></div></div>
-   <h3>Profit each day</h3><div id="daily"></div>
+   <h3 id="dh">Profit each day</h3><div id="daily"></div>
    ${a.daily.length>1?`<ul class="bw"><li><span>Best day</span><b class="${best[0].v<0?"neg":"pos"}">${money(best[0].v)}</b><small>${dl(best[0])}</small></li><li><span>Toughest day</span><b class="${lo.v<0?"neg":"pos"}">${money(lo.v)}</b><small>${dl(lo)}</small></li></ul>`:""}`;
   S.series=a.daily;drawDaily()}
-function drawDaily(){const el=$("#daily");if(!el||!S.series)return;const s=S.series,n=s.length;if(!n){el.innerHTML='<p class="muted">No stall days in this period.</p>';return}
+function drawDaily(){const el=$("#daily");if(!el||!S.series)return;let s=S.series;
+  /* past two months of days, one bar per month reads better */
+  const bym=s.length>62;if(bym){const t={};s.forEach(x=>{const m=x.d.slice(0,7);t[m]=(t[m]||0)+x.v});s=Object.entries(t).map(([m,v])=>({d:m+"-01",v}))}
+  const n=s.length,lab=x=>bym?monthName(x.d.slice(0,7)):fmtDate(x.d,{day:"numeric",month:"short"});if($("#dh"))$("#dh").textContent=bym?"Profit each month":"Profit each day";if(!n){el.innerHTML='<p class="muted">No stall days in this period.</p>';return}
   const W=Math.max(260,el.clientWidth),H=210,pt=22,pb=26,pl=28;let hi=Math.max(...s.map(x=>x.v),1),lo=Math.min(...s.map(x=>x.v),0);const sp=hi-lo;hi+=sp*.15;if(lo<0)lo-=sp*.22;
   const y=v=>pt+(hi-v)/(hi-lo)*(H-pt-pb),y0=y(0),step=(W-pl)/n,bw=Math.max(3,Math.min(40,step*.62)),showV=step>=34,every=Math.ceil(30/step);
-  const f=v=>(v<0?"−":"+")+"₹"+(Math.abs(v)>=1000?(Math.abs(v)/1000).toFixed(1)+"k":Math.abs(v));let g="";
+  const f=v=>{const a=Math.abs(v);return(v<0?"−":"+")+"₹"+(a>=1e7?+(a/1e7).toFixed(1)+"Cr":a>=1e5?+(a/1e5).toFixed(1)+"L":a>=1e3?+(a/1e3).toFixed(1)+"k":a)};let g="";
   s.forEach((x,i)=>{const cx=pl+step*i+step/2,ng=x.v<0,h=Math.max(2,Math.abs(y(x.v)-y0)),top=ng?y0:y0-h;
-    g+=`<rect x="${(cx-bw/2).toFixed(1)}" y="${top.toFixed(1)}" width="${bw.toFixed(1)}" height="${h.toFixed(1)}" rx="${Math.min(5,bw/3).toFixed(1)}" class="${ng?"b-neg":"b-pos"}"><title>${fmtDate(x.d,{day:"numeric",month:"short"})}: ${ng?"loss":"profit"} ${rs(x.v)}</title></rect>`;
+    g+=`<rect x="${(cx-bw/2).toFixed(1)}" y="${top.toFixed(1)}" width="${bw.toFixed(1)}" height="${h.toFixed(1)}" rx="${Math.min(5,bw/3).toFixed(1)}" class="${ng?"b-neg":"b-pos"}"><title>${lab(x)}: ${ng?"loss":"profit"} ${rs(x.v)}</title></rect>`;
     if(showV)g+=`<text x="${cx}" y="${ng?y0+h+13:top-6}" class="v ${ng?"t-neg":"t-pos"}">${f(x.v)}</text>`;
-    if(i%every===0)g+=`<text x="${cx}" y="${H-7}" class="dl">${+x.d.slice(8)} ${fmtDate(x.d,{month:"short"})}</text>`});
-  el.innerHTML=`<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="Profit each day: ${s.map(x=>`${fmtDate(x.d,{day:"numeric",month:"short"})} ${x.v<0?"loss":"profit"} ${rs(x.v)}`).join("; ")}"><line x1="${pl-4}" x2="${W}" y1="${y0}" y2="${y0}" class="zero"/><text x="0" y="${y0+4}" class="z">₹0</text>${g}</svg>`}
+    if(i%every===0)g+=`<text x="${cx}" y="${H-7}" class="dl">${bym?fmtDate(x.d,{month:"short",year:"2-digit"}):`${+x.d.slice(8)} ${fmtDate(x.d,{month:"short"})}`}</text>`});
+  el.innerHTML=`<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="Profit each ${bym?"month":"day"}: ${s.map(x=>`${lab(x)} ${x.v<0?"loss":"profit"} ${rs(x.v)}`).join("; ")}"><line x1="${pl-4}" x2="${W}" y1="${y0}" y2="${y0}" class="zero"/><text x="0" y="${y0+4}" class="z">₹0</text>${g}</svg>`}
 
 /* ---------- events ---------- */
 document.addEventListener("click",e=>{const b=e.target.closest("[data-act]");if(!b||b.getAttribute("aria-disabled")==="true")return;
@@ -416,6 +433,8 @@ document.addEventListener("click",e=>{const b=e.target.closest("[data-act]");if(
    per:()=>{S.per=b.dataset.per;$$("[data-per]").forEach(c=>c.setAttribute("aria-pressed",c===b));fillDash()},
    "del-day":()=>{const d=b.dataset.d,day=clone(D.days[d]);run("delDay",[d]);renderHome();
      toast(`<span>Cleared ${fmtDate(d,{day:"numeric",month:"long"})}.</span><button class="quiet" data-act="undo">Undo</button>`);S.undo=()=>{run("putDay",[d,day]);renderHome()}},
+   month:()=>{const m=b.dataset.m,op=b.getAttribute("aria-expanded")!=="true";S.mo[m]=op;b.setAttribute("aria-expanded",op);$$(`tbody tr[data-d^="${m}"]`).forEach(tr=>tr.hidden=!op)},
+   allc:()=>{S.allc=!S.allc;fillDash();$("[data-act=allc]")?.focus()},
    "del-cost":()=>{const c=D.expenses.find(x=>x.id===b.dataset.id);run("delCost",[c.id]);fillDash();
      toast(`<span>Removed “${esc(c.name)}”.</span><button class="quiet" data-act="undo">Undo</button>`);S.undo=()=>{run("addCost",[c]);fillDash()}},
    leave:()=>{const d=b.dataset.d;run("setLeave",[d,true]);renderHome();$(`tr[data-d="${d}"] [data-act=unleave]`)?.focus();
@@ -429,9 +448,9 @@ document.addEventListener("submit",e=>{e.preventDefault();const f=e.target;
     if(bad){er.hidden=false;er.textContent=bad[0];bad[1].focus();return}er.hidden=true;
     run("addCost",[{id:uid(),date:d,name:n,amount:a}]);f.n.value="";f.a.value="";fillDash();toast(`Added ${esc(n)} · ${rs(a)}.`,3000)}});
 document.addEventListener("input",e=>{const i=e.target,f=i.dataset.f;
-  if(f==="profit"){const neg=/^[\s₹]*[-−]/.test(i.value),n=i.value.replace(/\D/g,"").slice(0,6),v=(neg?"-":"")+n;if(v!==i.value)i.value=v;
+  if(f==="profit"){const neg=/^[\s₹]*[-−]/.test(i.value),n=i.value.replace(/\D/g,"").slice(0,9),v=(neg?"-":"")+n;if(v!==i.value)i.value=v;
     run("setProfit",[i.dataset.d,n===""?null:(neg?-1:1)*+n],i.dataset.d+"p");derive();return}
-  if(i.classList.contains("cell")||i.hasAttribute("data-price")||i.name==="a"){const v=i.value.replace(/\D/g,"").slice(0,f==="cost"?6:4);if(v!==i.value)i.value=v}
+  if(i.classList.contains("cell")||i.hasAttribute("data-price")||i.name==="a"){const v=i.value.replace(/\D/g,"").slice(0,f==="cost"||i.name==="a"?9:5);if(v!==i.value)i.value=v}
   if(f==="cost"){run("setCost",[i.dataset.d,i.value===""?null:+i.value],i.dataset.d+"c");derive();return}
   if(f==="price"){run("setPrice",[i.dataset.k,"price",+i.value||0,TODAY()],"p"+i.dataset.k);derive();return}
   if(i.classList.contains("cell")){const{d,k}=i.dataset;run("setCell",[d,k,f,+i.value||0],d+k+f);derive()}});
@@ -445,9 +464,9 @@ document.addEventListener("beforeinput",e=>{const i=e.target;if(!i.dataset?.fres
   e.preventDefault();i.value=t==="insertText"?e.data:"";try{i.setSelectionRange(i.value.length,i.value.length)}catch(x){}i.dispatchEvent(new Event("input",{bubbles:true}))});
 document.addEventListener("focusout",e=>{const i=e.target;if(i.dataset?.fresh)delete i.dataset.fresh;if((i.dataset?.f==="profit"||i.dataset?.f==="cost")&&$("#foot"))derive();if(i.hasAttribute?.("data-price")&&i.value==="")i.value="0"});
 document.addEventListener("keydown",e=>{const i=e.target;if(!i.classList?.contains("cell"))return;
-  if(e.key==="Enter"){e.preventDefault();const all=$$(".cell"),n=all[all.indexOf(i)+(e.shiftKey?-1:1)];n?n.focus():i.blur();return}
+  if(e.key==="Enter"){e.preventDefault();const all=$$(".cell").filter(x=>!x.closest("tr").hidden),n=all[all.indexOf(i)+(e.shiftKey?-1:1)];n?n.focus():i.blur();return}
   const dir=e.key==="ArrowDown"?1:e.key==="ArrowUp"?-1:0;if(!dir)return;e.preventDefault();
-  const col=$$(i.dataset.k?`.cell[data-k="${i.dataset.k}"][data-f="${i.dataset.f}"]`:`.cell[data-f="${i.dataset.f}"]`),n=col[col.indexOf(i)+dir];n?.focus()});
+  const col=$$(i.dataset.k?`.cell[data-k="${i.dataset.k}"][data-f="${i.dataset.f}"]`:`.cell[data-f="${i.dataset.f}"]`).filter(x=>!x.closest("tr").hidden),n=col[col.indexOf(i)+dir];n?.focus()});
 addEventListener("hashchange",()=>{if(S.session&&D)route()});
 addEventListener("resize",()=>{if(S.page==="dashboard")requestAnimationFrame(drawDaily)});
 /* after leaving a box, pick up anything the other person changed meanwhile */

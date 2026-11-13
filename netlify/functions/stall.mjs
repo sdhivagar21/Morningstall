@@ -86,7 +86,8 @@ const OPS = {
 const isDate = (s) => typeof s === "string" && /^\d{4}-\d{2}-\d{2}$/.test(s) && !isNaN(Date.parse(s));
 const isInt = (v, lo, hi) => Number.isInteger(v) && v >= lo && v <= hi;
 const isItem = (k) => ITEMS.includes(k);
-const MAXQ = 9999, MAXRS = 999999;
+/* room for a busy stall: up to 99,999 items a day and ₹99,99,99,999 amounts */
+const MAXQ = 99999, MAXRS = 999999999;
 
 function cleanDay(day) {
   if (!day || typeof day !== "object") return null;
@@ -124,7 +125,7 @@ function check(name, a) {
     case "delCost": return typeof a[0] === "string" && a[0].length <= 40 ? [a[0]] : null;
     case "setPocketFix": {
       const f = a[0];
-      return f && typeof f === "object" && isInt(f.amount, 0, MAXRS) && isDate(f.date) && isInt(f.base, -1e9, 1e9) && isInt(f.at, 0, 1e14) && Object.values(USERS).some((x) => x.name === f.by)
+      return f && typeof f === "object" && isInt(f.amount, 0, MAXRS) && isDate(f.date) && isInt(f.base, -1e13, 1e13) && isInt(f.at, 0, 1e14) && Object.values(USERS).some((x) => x.name === f.by)
         ? [{ amount: f.amount, date: f.date, base: f.base, at: f.at, by: f.by }] : null;
     }
     default: return null;
