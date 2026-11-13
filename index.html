@@ -367,20 +367,23 @@ function renderDash(){const t=TODAY();
     <button class="btn secondary" type="submit">Add cost</button><p class="ferr" id="ferr" role="alert" hidden></p></form><ul class="cl" id="costs"></ul></section>
   <section class="panel" aria-labelledby="pk-h"><h2 id="pk-h">Money in pocket</h2><div id="pk"></div></section>
   <section class="panel" aria-labelledby="pa-h"><h2 id="pa-h">Profit analysis</h2><div id="ana"></div></section>`;fillDash()}
-/* in pocket = every day's profit added up (sales − that day's cost); other costs are not taken off.
-   Once cash has been counted (pocketFix), it starts from that amount: profit already on that day was in the count,
-   anything added to that day afterwards and every later day goes on top, and edits to older days don't move it. */
+/* in pocket = daily profit added up (sales − that day's cost) − other costs.
+   Once cash has been counted (pocketFix), it starts from that amount: profit and other costs already on that day were in
+   the count (base, ob); anything added to that day afterwards and every later day counts, and edits to older days don't move it. */
 const profitFrom=d=>{const a=analyse([d,TODAY()]);return a.rev-a.dcost+a.manual};
-function pocket(){const f=D.pocketFix;if(!f)return{v:profitFrom(START)};const extra=profitFrom(f.date)-f.base;return{v:f.amount+extra,f,extra}}
-function fillPocket(){const el=$("#pk");if(!el||el.querySelector("form"))return;const{v,f,extra}=pocket(),o={day:"numeric",month:"short"};
-  const why=f?`Counted ${rs(f.amount)} on ${fmtDate(f.date,o)} (${esc(f.by)})${extra?` ${extra<0?"−":"+"} ${rs(extra)} profit since then`:""}.`
-    :(a=>`${rs(a.rev)} sales${a.dcost?` − ${rs(a.dcost)} daily costs saved earlier`:""}${a.mdays.length?` ${a.manual<0?"−":"+"} ${rs(a.manual)} from profit-only days`:""}.`)(analyse([START,TODAY()]));
+const otherFrom=d=>D.expenses.reduce((a,e)=>e.date>=d&&e.date<=TODAY()?a+e.amount:a,0);
+function pocket(){const f=D.pocketFix;if(!f){const p=profitFrom(START),c=otherFrom(START);return{v:p-c,p,c}}
+  /* counts saved before other costs were taken off: treat that day's other costs as already in the count */
+  const ob=f.ob??D.expenses.reduce((a,e)=>e.date===f.date?a+e.amount:a,0),p=profitFrom(f.date)-f.base,c=otherFrom(f.date)-ob;return{v:f.amount+p-c,f,p,c}}
+function fillPocket(){const el=$("#pk");if(!el||el.querySelector("form"))return;const{v,f,p,c}=pocket(),o={day:"numeric",month:"short"};
+  const parts=(p?` ${p<0?"−":"+"} ${rs(p)} daily profit`:"")+(c?` − ${rs(c)} other costs`:"");
+  const why=f?`Counted ${rs(f.amount)} on ${fmtDate(f.date,o)} (${esc(f.by)})${parts?parts+" since then":""}.`:`${money(p)} daily profit − ${rs(c)} other costs.`;
   el.innerHTML=`<div class="pk"><span>${f?`Since counting on ${fmtDate(f.date,o)}`:`All time · since ${fmtDate(START,o)}`}</span><b class="${v<0?"neg":""}">${money(v)}</b>
-   <small>${why} Other costs are not taken off here.</small></div><button class="quiet" data-act="pk-edit" style="margin-top:6px">Correct amount</button>`}
+   <small>${why}</small></div><button class="quiet" data-act="pk-edit" style="margin-top:6px">Correct amount</button>`}
 function editPocket(){const el=$("#pk");
   el.innerHTML=`<form id="pkf" class="pkf" novalidate><label class="field">Cash in pocket now<span class="money">₹<input name="v" inputmode="numeric" maxlength="6" autocomplete="off" value="${Math.max(0,pocket().v)}"></span></label>
    <button class="btn primary" type="submit">Save</button><button class="quiet" type="button" data-act="pk-cancel">Cancel</button>
-   <p class="note" style="flex-basis:100%">Count the cash you actually have and type it here. Profit from now on is added on top.</p></form>`;
+   <p class="note" style="flex-basis:100%">Count the cash you actually have and type it here. From now on, daily profit is added and other costs are taken off.</p></form>`;
   const i=el.querySelector("input");i.focus();i.select()}
 function fillDash(){fillPocket();const r=periodRange(S.per),a=analyse(r),same=r[0]===r[1],o={day:"numeric",month:"short",year:"numeric"};
   $("#per-l").textContent=`${same?fmtDate(r[0],o):`${fmtDate(r[0],o)} – ${fmtDate(r[1],o)}`} · ${a.daily.length} filled · ${a.missing.length} not filled${a.leaves.length?` · ${pl(a.leaves.length,"leave day")}`:""}`;
@@ -426,7 +429,7 @@ document.addEventListener("click",e=>{const b=e.target.closest("[data-act]");if(
 document.addEventListener("submit",e=>{e.preventDefault();const f=e.target;
   if(f.id==="login")return onLogin(f);
   if(f.id==="pkf"){const v=f.v.value.replace(/\D/g,"");if(v===""){f.v.focus();return}const t=TODAY();
-    run("setPocketFix",[{amount:+v,date:t,base:profitFrom(t),by:S.session.name}]);f.remove();fillPocket();toast(`Money in pocket set to ${rs(+v)}.`,3000);return}
+    run("setPocketFix",[{amount:+v,date:t,base:profitFrom(t),ob:otherFrom(t),by:S.session.name}]);f.remove();fillPocket();toast(`Money in pocket set to ${rs(+v)}.`,3000);return}
   if(f.id==="addc"){const n=f.n.value.trim(),a=+f.a.value,d=f.d.value,er=$("#ferr");
     const bad=!n?["Say what the money was for.",f.n]:!(a>0)?["Enter an amount above ₹0.",f.a]:!d||d>TODAY()?["Pick a date up to today.",f.d]:null;
     if(bad){er.hidden=false;er.textContent=bad[0];bad[1].focus();return}er.hidden=true;
