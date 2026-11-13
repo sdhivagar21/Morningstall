@@ -124,8 +124,8 @@ function check(name, a) {
     case "delCost": return typeof a[0] === "string" && a[0].length <= 40 ? [a[0]] : null;
     case "setPocketFix": {
       const f = a[0];
-      return f && typeof f === "object" && isInt(f.amount, 0, MAXRS) && isDate(f.date) && isInt(f.base, -1e9, 1e9) && isInt(f.ob, 0, 1e9) && Object.values(USERS).some((x) => x.name === f.by)
-        ? [{ amount: f.amount, date: f.date, base: f.base, ob: f.ob, by: f.by }] : null;
+      return f && typeof f === "object" && isInt(f.amount, 0, MAXRS) && isDate(f.date) && isInt(f.base, -1e9, 1e9) && isInt(f.at, 0, 1e14) && Object.values(USERS).some((x) => x.name === f.by)
+        ? [{ amount: f.amount, date: f.date, base: f.base, at: f.at, by: f.by }] : null;
     }
     default: return null;
   }

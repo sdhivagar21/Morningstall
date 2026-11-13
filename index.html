@@ -368,16 +368,21 @@ function renderDash(){const t=TODAY();
   <section class="panel" aria-labelledby="pk-h"><h2 id="pk-h">Money in pocket</h2><div id="pk"></div></section>
   <section class="panel" aria-labelledby="pa-h"><h2 id="pa-h">Profit analysis</h2><div id="ana"></div></section>`;fillDash()}
 /* in pocket = daily profit added up (sales − that day's cost) − other costs.
-   Once cash has been counted (pocketFix), it starts from that amount: profit and other costs already on that day were in
-   the count (base, ob); anything added to that day afterwards and every later day counts, and edits to older days don't move it. */
+   Once cash has been counted (pocketFix), it starts from that amount: profit already on that day was in the count (base),
+   and so were other costs entered before the count (at). Costs for that day entered after it, and costs for later days,
+   come off; edits to older days don't move it. */
 const profitFrom=d=>{const a=analyse([d,TODAY()]);return a.rev-a.dcost+a.manual};
 const otherFrom=d=>D.expenses.reduce((a,e)=>e.date>=d&&e.date<=TODAY()?a+e.amount:a,0);
+/* a cost's id starts with the time it was entered (see uid) */
+const madeAt=id=>parseInt(String(id).slice(0,-5),36)||0;
 function pocket(){const f=D.pocketFix;if(!f){const p=profitFrom(START),c=otherFrom(START);return{v:p-c,p,c}}
-  /* counts saved before other costs were taken off: treat that day's other costs as already in the count */
-  const ob=f.ob??D.expenses.reduce((a,e)=>e.date===f.date?a+e.amount:a,0),p=profitFrom(f.date)-f.base,c=otherFrom(f.date)-ob;return{v:f.amount+p-c,f,p,c}}
-function fillPocket(){const el=$("#pk");if(!el||el.querySelector("form"))return;const{v,f,p,c}=pocket(),o={day:"numeric",month:"short"};
+  const p=profitFrom(f.date)-f.base,t=TODAY(),old=!f.at,
+   /* counts saved before the count time was kept: costs entered on the count day after the first one are taken as after it */
+   at=f.at||Math.min(...D.expenses.filter(e=>e.date===f.date).map(e=>madeAt(e.id)),Infinity),
+   c=D.expenses.reduce((a,e)=>e.date<=t&&(e.date>f.date||e.date===f.date&&madeAt(e.id)>at)?a+e.amount:a,0);return{v:f.amount+p-c,f,p,c,old}}
+function fillPocket(){const el=$("#pk");if(!el||el.querySelector("form"))return;const{v,f,p,c,old}=pocket(),o={day:"numeric",month:"short"};
   const parts=(p?` ${p<0?"−":"+"} ${rs(p)} daily profit`:"")+(c?` − ${rs(c)} other costs`:"");
-  const why=f?`Counted ${rs(f.amount)} on ${fmtDate(f.date,o)} (${esc(f.by)})${parts?parts+" since then":""}.`:`${money(p)} daily profit − ${rs(c)} other costs.`;
+  const why=f?`Counted ${rs(f.amount)} on ${fmtDate(f.date,o)} (${esc(f.by)})${parts?parts+" since then":""}.${old?" If this looks wrong, tap Correct amount and count again.":""}`:`${money(p)} daily profit − ${rs(c)} other costs.`;
   el.innerHTML=`<div class="pk"><span>${f?`Since counting on ${fmtDate(f.date,o)}`:`All time · since ${fmtDate(START,o)}`}</span><b class="${v<0?"neg":""}">${money(v)}</b>
    <small>${why}</small></div><button class="quiet" data-act="pk-edit" style="margin-top:6px">Correct amount</button>`}
 function editPocket(){const el=$("#pk");
@@ -429,7 +434,7 @@ document.addEventListener("click",e=>{const b=e.target.closest("[data-act]");if(
 document.addEventListener("submit",e=>{e.preventDefault();const f=e.target;
   if(f.id==="login")return onLogin(f);
   if(f.id==="pkf"){const v=f.v.value.replace(/\D/g,"");if(v===""){f.v.focus();return}const t=TODAY();
-    run("setPocketFix",[{amount:+v,date:t,base:profitFrom(t),ob:otherFrom(t),by:S.session.name}]);f.remove();fillPocket();toast(`Money in pocket set to ${rs(+v)}.`,3000);return}
+    run("setPocketFix",[{amount:+v,date:t,base:profitFrom(t),at:Date.now(),by:S.session.name}]);f.remove();fillPocket();toast(`Money in pocket set to ${rs(+v)}.`,3000);return}
   if(f.id==="addc"){const n=f.n.value.trim(),a=+f.a.value,d=f.d.value,er=$("#ferr");
     const bad=!n?["Say what the money was for.",f.n]:!(a>0)?["Enter an amount above ₹0.",f.a]:!d||d>TODAY()?["Pick a date up to today.",f.d]:null;
     if(bad){er.hidden=false;er.textContent=bad[0];bad[1].focus();return}er.hidden=true;
