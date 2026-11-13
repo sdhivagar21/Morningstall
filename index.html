@@ -123,6 +123,7 @@ h3{font-size:18px;margin:22px 0 10px}h3 span{font:500 14px var(--bf);color:var(-
 .kpi b{display:block;font-size:clamp(22px,6.4vw,30px);line-height:1.15;color:var(--green);letter-spacing:-.02em}.kpi small{font-size:13px;color:var(--muted)}
 .kpi.hl{background:var(--green)}.kpi.hl span,.kpi.hl small{color:rgba(255,248,236,.85)}.kpi.hl b{color:var(--mango)}.kpi.hl.lossk b{color:#FFB3A1}
 .pk{background:var(--cream);border:2px solid var(--line);border-radius:18px;padding:16px 18px;margin-top:12px}.pk span{font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.pkf{display:flex;flex-wrap:wrap;align-items:flex-end;gap:10px;margin-top:12px}.pkf .money{height:52px}.pkf .money input{width:110px}.pkf .btn{min-height:52px}
 .pk b{display:block;font:700 clamp(34px,10vw,46px)/1.1 var(--bf);letter-spacing:-.03em;color:var(--green);margin:4px 0 6px}.pk b.neg{color:var(--loss)}.pk small{font-size:14px;color:var(--muted)}
 .big-p{background:var(--green);color:var(--cream);border-radius:18px;padding:18px;margin-top:12px}.big-p span{font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:rgba(255,248,236,.85)}
 .big-p b{display:block;font:700 clamp(40px,12vw,56px)/1.05 var(--bf);letter-spacing:-.03em;color:var(--mango);margin:4px 0 6px}.big-p.neg b{color:#FFB3A1}.big-p small{font-size:14px;color:rgba(255,248,236,.9)}
@@ -198,7 +199,9 @@ const OPS={
   delDay(db,d){delete db.days[d]},putDay(db,d,day){db.days[d]=day},
   setLeave(db,d,on){if(on)(db.days[d]||(db.days[d]=newDay(db.prices))).leave=true;else if(db.days[d])delete db.days[d].leave},
   setPrice(db,k,f,v,today){db.prices[k][f]=v;const t=db.days[today];if(t)(t.prices||(t.prices=clone(db.prices)))[k][f]=v},
-  addCost(db,e){if(!db.expenses.some(x=>x.id===e.id))db.expenses.push(e)},delCost(db,id){db.expenses=db.expenses.filter(e=>e.id!==id)}};
+  addCost(db,e){if(!db.expenses.some(x=>x.id===e.id))db.expenses.push(e)},delCost(db,id){db.expenses=db.expenses.filter(e=>e.id!==id)},
+  /* cash actually counted on a day: money in pocket starts from it (keep in step with netlify/functions/stall.mjs) */
+  setPocketFix(db,f){db.pocketFix=f}};
 /* older saves priced each item's cost; turn that into the day's cost once so totals don't jump */
 function migrate(db){for(const day of Object.values(db.days)){const pr=day.prices||db.prices,m=P.reduce((a,p)=>a+(day[p.id]?.made||0),0);
   if(typeof day.cost!=="number"&&m>0&&P.some(p=>typeof pr[p.id]?.cost==="number"))day.cost=P.reduce((a,p)=>a+(day[p.id]?.made||0)*(pr[p.id]?.cost||0),0)}return db}
@@ -364,10 +367,21 @@ function renderDash(){const t=TODAY();
     <button class="btn secondary" type="submit">Add cost</button><p class="ferr" id="ferr" role="alert" hidden></p></form><ul class="cl" id="costs"></ul></section>
   <section class="panel" aria-labelledby="pk-h"><h2 id="pk-h">Money in pocket</h2><div id="pk"></div></section>
   <section class="panel" aria-labelledby="pa-h"><h2 id="pa-h">Profit analysis</h2><div id="ana"></div></section>`;fillDash()}
-/* in pocket = every day's profit added up (sales − that day's cost), since the start; other costs are not taken off */
-function fillPocket(){const el=$("#pk");if(!el)return;const a=analyse([START,TODAY()]),v=a.rev-a.dcost+a.manual;
-  el.innerHTML=`<div class="pk"><span>All time · since ${fmtDate(START,{day:"numeric",month:"short"})}</span><b class="${v<0?"neg":""}">${money(v)}</b>
-   <small>${rs(a.rev)} sales${a.dcost?` − ${rs(a.dcost)} daily costs saved earlier`:""}${a.mdays.length?` ${a.manual<0?"−":"+"} ${rs(a.manual)} from profit-only days`:""}. Other costs are not taken off here.</small></div>`}
+/* in pocket = every day's profit added up (sales − that day's cost); other costs are not taken off.
+   Once cash has been counted (pocketFix), it starts from that amount: profit already on that day was in the count,
+   anything added to that day afterwards and every later day goes on top, and edits to older days don't move it. */
+const profitFrom=d=>{const a=analyse([d,TODAY()]);return a.rev-a.dcost+a.manual};
+function pocket(){const f=D.pocketFix;if(!f)return{v:profitFrom(START)};const extra=profitFrom(f.date)-f.base;return{v:f.amount+extra,f,extra}}
+function fillPocket(){const el=$("#pk");if(!el||el.querySelector("form"))return;const{v,f,extra}=pocket(),o={day:"numeric",month:"short"};
+  const why=f?`Counted ${rs(f.amount)} on ${fmtDate(f.date,o)} (${esc(f.by)})${extra?` ${extra<0?"−":"+"} ${rs(extra)} profit since then`:""}.`
+    :(a=>`${rs(a.rev)} sales${a.dcost?` − ${rs(a.dcost)} daily costs saved earlier`:""}${a.mdays.length?` ${a.manual<0?"−":"+"} ${rs(a.manual)} from profit-only days`:""}.`)(analyse([START,TODAY()]));
+  el.innerHTML=`<div class="pk"><span>${f?`Since counting on ${fmtDate(f.date,o)}`:`All time · since ${fmtDate(START,o)}`}</span><b class="${v<0?"neg":""}">${money(v)}</b>
+   <small>${why} Other costs are not taken off here.</small></div><button class="quiet" data-act="pk-edit" style="margin-top:6px">Correct amount</button>`}
+function editPocket(){const el=$("#pk");
+  el.innerHTML=`<form id="pkf" class="pkf" novalidate><label class="field">Cash in pocket now<span class="money">₹<input name="v" inputmode="numeric" maxlength="6" autocomplete="off" value="${Math.max(0,pocket().v)}"></span></label>
+   <button class="btn primary" type="submit">Save</button><button class="quiet" type="button" data-act="pk-cancel">Cancel</button>
+   <p class="note" style="flex-basis:100%">Count the cash you actually have and type it here. Profit from now on is added on top.</p></form>`;
+  const i=el.querySelector("input");i.focus();i.select()}
 function fillDash(){fillPocket();const r=periodRange(S.per),a=analyse(r),same=r[0]===r[1],o={day:"numeric",month:"short",year:"numeric"};
   $("#per-l").textContent=`${same?fmtDate(r[0],o):`${fmtDate(r[0],o)} – ${fmtDate(r[1],o)}`} · ${a.daily.length} filled · ${a.missing.length} not filled${a.leaves.length?` · ${pl(a.leaves.length,"leave day")}`:""}`;
   const max=Math.max(a.invested,1);
@@ -402,6 +416,7 @@ document.addEventListener("click",e=>{const b=e.target.closest("[data-act]");if(
    per:()=>{S.per=b.dataset.per;$$("[data-per]").forEach(c=>c.setAttribute("aria-pressed",c===b));fillDash()},
    "del-day":()=>{const d=b.dataset.d,day=clone(D.days[d]);run("delDay",[d]);renderHome();
      toast(`<span>Cleared ${fmtDate(d,{day:"numeric",month:"long"})}.</span><button class="quiet" data-act="undo">Undo</button>`);S.undo=()=>{run("putDay",[d,day]);renderHome()}},
+   "pk-edit":editPocket,"pk-cancel":()=>{$("#pkf").remove();fillPocket()},
    "del-cost":()=>{const c=D.expenses.find(x=>x.id===b.dataset.id);run("delCost",[c.id]);fillDash();
      toast(`<span>Removed “${esc(c.name)}”.</span><button class="quiet" data-act="undo">Undo</button>`);S.undo=()=>{run("addCost",[c]);fillDash()}},
    leave:()=>{const d=b.dataset.d;run("setLeave",[d,true]);renderHome();$(`tr[data-d="${d}"] [data-act=unleave]`)?.focus();
@@ -410,6 +425,8 @@ document.addEventListener("click",e=>{const b=e.target.closest("[data-act]");if(
    undo:()=>{S.undo?.();S.undo=null;$("#toast").innerHTML=""}})[b.dataset.act]?.()});
 document.addEventListener("submit",e=>{e.preventDefault();const f=e.target;
   if(f.id==="login")return onLogin(f);
+  if(f.id==="pkf"){const v=f.v.value.replace(/\D/g,"");if(v===""){f.v.focus();return}const t=TODAY();
+    run("setPocketFix",[{amount:+v,date:t,base:profitFrom(t),by:S.session.name}]);f.remove();fillPocket();toast(`Money in pocket set to ${rs(+v)}.`,3000);return}
   if(f.id==="addc"){const n=f.n.value.trim(),a=+f.a.value,d=f.d.value,er=$("#ferr");
     const bad=!n?["Say what the money was for.",f.n]:!(a>0)?["Enter an amount above ₹0.",f.a]:!d||d>TODAY()?["Pick a date up to today.",f.d]:null;
     if(bad){er.hidden=false;er.textContent=bad[0];bad[1].focus();return}er.hidden=true;

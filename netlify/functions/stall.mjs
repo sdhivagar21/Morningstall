@@ -78,6 +78,8 @@ const OPS = {
   setPrice(db, k, f, v, today) { db.prices[k][f] = v; const t = db.days[today]; if (t) (t.prices ||= clone(db.prices))[k][f] = v; },
   addCost(db, e) { if (!db.expenses.some((x) => x.id === e.id)) db.expenses.push(e); },
   delCost(db, id) { db.expenses = db.expenses.filter((e) => e.id !== id); },
+  /* cash actually counted on a day: money in pocket starts from it */
+  setPocketFix(db, f) { db.pocketFix = f; },
 };
 
 /* ---------- checking what the page sends ---------- */
@@ -120,6 +122,11 @@ function check(name, a) {
         ? [{ id: e.id, date: e.date, name, amount: e.amount }] : null;
     }
     case "delCost": return typeof a[0] === "string" && a[0].length <= 40 ? [a[0]] : null;
+    case "setPocketFix": {
+      const f = a[0];
+      return f && typeof f === "object" && isInt(f.amount, 0, MAXRS) && isDate(f.date) && isInt(f.base, -1e9, 1e9) && Object.values(USERS).some((x) => x.name === f.by)
+        ? [{ amount: f.amount, date: f.date, base: f.base, by: f.by }] : null;
+    }
     default: return null;
   }
 }
