@@ -122,6 +122,7 @@ h3{font-size:18px;margin:22px 0 10px}h3 span{font:500 14px var(--bf);color:var(-
 .kpi{background:var(--cream);border-radius:16px;padding:14px}.kpi span{display:block;font-size:13px;font-weight:700;color:var(--muted)}
 .kpi b{display:block;font-size:clamp(22px,6.4vw,30px);line-height:1.15;color:var(--green);letter-spacing:-.02em}.kpi small{font-size:13px;color:var(--muted)}
 .kpi.hl{background:var(--green)}.kpi.hl span,.kpi.hl small{color:rgba(255,248,236,.85)}.kpi.hl b{color:var(--mango)}.kpi.hl.lossk b{color:#FFB3A1}
+.pk{height:58px;max-width:280px;margin-top:2px}.pk input{width:100%;height:54px;font-size:26px}
 .big-p{background:var(--green);color:var(--cream);border-radius:18px;padding:18px;margin-top:12px}.big-p span{font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:rgba(255,248,236,.85)}
 .big-p b{display:block;font:700 clamp(40px,12vw,56px)/1.05 var(--bf);letter-spacing:-.03em;color:var(--mango);margin:4px 0 6px}.big-p.neg b{color:#FFB3A1}.big-p small{font-size:14px;color:rgba(255,248,236,.9)}
 .kpis2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
@@ -196,7 +197,9 @@ const OPS={
   delDay(db,d){delete db.days[d]},putDay(db,d,day){db.days[d]=day},
   setLeave(db,d,on){if(on)(db.days[d]||(db.days[d]=newDay(db.prices))).leave=true;else if(db.days[d])delete db.days[d].leave},
   setPrice(db,k,f,v,today){db.prices[k][f]=v;const t=db.days[today];if(t)(t.prices||(t.prices=clone(db.prices)))[k][f]=v},
-  addCost(db,e){if(!db.expenses.some(x=>x.id===e.id))db.expenses.push(e)},delCost(db,id){db.expenses=db.expenses.filter(e=>e.id!==id)}};
+  addCost(db,e){if(!db.expenses.some(x=>x.id===e.id))db.expenses.push(e)},delCost(db,id){db.expenses=db.expenses.filter(e=>e.id!==id)},
+  /* cash actually in hand right now — counted and typed in, kept apart from profit and loss */
+  setPocket(db,v){if(v==null)delete db.pocket;else db.pocket=v}};
 /* older saves priced each item's cost; turn that into the day's cost once so totals don't jump */
 function migrate(db){for(const day of Object.values(db.days)){const pr=day.prices||db.prices,m=P.reduce((a,p)=>a+(day[p.id]?.made||0),0);
   if(typeof day.cost!=="number"&&m>0&&P.some(p=>typeof pr[p.id]?.cost==="number"))day.cost=P.reduce((a,p)=>a+(day[p.id]?.made||0)*(pr[p.id]?.cost||0),0)}return db}
@@ -365,8 +368,13 @@ function renderDash(){const t=TODAY();
    <form id="addc" class="addc" novalidate><label class="field wide">What for<input class="inp" name="n" maxlength="60" placeholder="e.g. Gas refill"></label>
     <label class="field">Amount<span class="money">₹<input name="a" inputmode="numeric" maxlength="6" placeholder="0"></span></label><label class="field">Date<input class="inp" type="date" name="d" value="${t}" min="${START}" max="${t}"></label>
     <button class="btn secondary" type="submit">Add cost</button><p class="ferr" id="ferr" role="alert" hidden></p></form><ul class="cl" id="costs"></ul></section>
+  <section class="panel" aria-labelledby="pk-h"><h2 id="pk-h">Money in pocket</h2><p class="muted" style="font-size:14px">The cash you actually have right now. Count it and type it here — it is kept apart from profit and loss, and doesn’t change with the period above.</p>
+   <label class="field" style="margin-top:10px">Cash in hand<span class="money pk">₹<input data-f="pocket" inputmode="numeric" maxlength="6" autocomplete="off" placeholder="0" aria-describedby="pk-n"></span></label><p class="note" id="pk-n"></p></section>
   <section class="panel" aria-labelledby="pa-h"><h2 id="pa-h">Profit analysis</h2><div id="ana"></div></section>`;fillDash()}
-function fillDash(){const r=periodRange(S.per),a=analyse(r),same=r[0]===r[1],o={day:"numeric",month:"short",year:"numeric"};
+function fillPocket(){const i=$("[data-f=pocket]"),n=$("#pk-n");if(!i)return;const k=D.pocket;
+  if(document.activeElement!==i)i.value=k?k.amount:"";
+  n.textContent=k?`Updated by ${k.by} · ${fmtDate(k.date,{day:"numeric",month:"short",year:"numeric"})}`:"Not entered yet."}
+function fillDash(){fillPocket();const r=periodRange(S.per),a=analyse(r),same=r[0]===r[1],o={day:"numeric",month:"short",year:"numeric"};
   $("#per-l").textContent=`${same?fmtDate(r[0],o):`${fmtDate(r[0],o)} – ${fmtDate(r[1],o)}`} · ${a.daily.length} filled · ${a.missing.length} not filled${a.leaves.length?` · ${pl(a.leaves.length,"leave day")}`:""}`;
   const max=Math.max(a.invested,1);
   $("#inv").innerHTML=`<div class="ir"><span class="ico">${ICON.grid}</span><span class="pn" style="font-size:16px">Daily costs</span><span class="amt">${rs(a.dcost)}</span><span class="sub">Cost column on Home</span><span class="sub" style="text-align:right">${pct(a.dcost,a.invested)}%</span><div class="bar"><i style="width:${a.dcost/max*100}%;background:var(--toast)"></i></div></div>
@@ -416,6 +424,8 @@ document.addEventListener("submit",e=>{e.preventDefault();const f=e.target;
 document.addEventListener("input",e=>{const i=e.target,f=i.dataset.f;
   if(f==="profit"){const neg=/^[\s₹]*[-−]/.test(i.value),n=i.value.replace(/\D/g,"").slice(0,6),v=(neg?"-":"")+n;if(v!==i.value)i.value=v;
     run("setProfit",[i.dataset.d,n===""?null:(neg?-1:1)*+n],i.dataset.d+"p");derive();return}
+  if(f==="pocket"){const v=i.value.replace(/\D/g,"").slice(0,6);if(v!==i.value)i.value=v;
+    run("setPocket",[v===""?null:{amount:+v,date:TODAY(),by:S.session.name}],"pocket");fillPocket();return}
   if(i.classList.contains("cell")||i.hasAttribute("data-price")||i.name==="a"){const v=i.value.replace(/\D/g,"").slice(0,f==="cost"?6:4);if(v!==i.value)i.value=v}
   if(f==="cost"){run("setCost",[i.dataset.d,i.value===""?null:+i.value],i.dataset.d+"c");derive();return}
   if(f==="price"){run("setPrice",[i.dataset.k,"price",+i.value||0,TODAY()],"p"+i.dataset.k);derive();return}
